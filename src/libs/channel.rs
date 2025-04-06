@@ -24,7 +24,8 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     let username = format!("user_{}", rand::random::<u32>() % 1000);
 
     let key = username.clone();
-    state.write().unwrap().sender.insert(key, Arc::new(Mutex::new(tx.clone())));
+    state.write().unwrap()
+        .sender.insert(key, Arc::new(Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
         user: "System".to_string(),
@@ -63,6 +64,8 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     };
 
     println!("Connection closed for {}", &username);
+    state.write().unwrap()
+        .sender.remove(&username);
 }
 
 trait Client {
