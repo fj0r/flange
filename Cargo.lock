@@ -170,6 +170,7 @@ dependencies = [
  "axum",
  "futures",
  "rand",
+ "serde",
  "tokio",
 ]
 
