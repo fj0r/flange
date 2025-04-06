@@ -5,15 +5,16 @@ use axum::{
 
 mod libs;
 use libs::channel::ws_handler;
-use libs::store::Store;
+use libs::shared::Shared;
+use std::sync::{Arc, RwLock};
 
 #[tokio::main]
 async fn main() {
-    let store = Store::init();
+    let shared = Arc::new(RwLock::new(Shared::init()));
 
     let app = Router::new()
         .route("/channel", get(ws_handler))
-        .with_state(store);
+        .with_state(shared);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
     println!("WebSocket chat server running on http://127.0.0.1:3000");

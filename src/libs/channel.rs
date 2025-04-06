@@ -5,37 +5,39 @@ use axum::{
 
 use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
+use std::sync::{mpsc, Arc, Mutex};
 
 use super::message::ChatMessage;
-use super::store::Store;
+use super::shared::SharedState;
 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
-    State(state): State<Store>,
+    State(state): State<SharedState>,
 ) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
-async fn handle_socket(socket: WebSocket, state: Store) {
+async fn handle_socket(socket: WebSocket, state: SharedState) {
     let (mut sender, mut receiver) = socket.split();
 
-    let tx = state.sender.lock().unwrap().clone();
-    let mut rx = tx.subscribe();
-
+    let (tx, rx) = mpsc::channel::<ChatMessage>();
     let username = format!("user_{}", rand::random::<u32>() % 1000);
-    let username_log = username.clone();
+
+    let key = username.clone();
+    state.write().unwrap().sender.insert(key, Arc::new(Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
         user: "System".to_string(),
-        message: format!("Welcome, {}!", username),
+        message: format!("Welcome, {}!", &username),
     };
     tx.send(msg).ok();
 
+    let un = username.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             if let Ok(text) = msg.to_text() {
                 let chat_msg = ChatMessage {
-                    user: username.clone(),
+                    user: un.clone(),
                     message: text.to_string(),
                 };
 
@@ -47,7 +49,7 @@ async fn handle_socket(socket: WebSocket, state: Store) {
     });
 
     let mut send_task = tokio::spawn(async move {
-        while let Ok(msg) = rx.recv().await {
+        while let Ok(msg) = rx.recv() {
             let text = format!("{}: {}", msg.user, msg.message);
             if sender.send(axum::extract::ws::Message::Text(text.into())).await.is_err() {
                 break;
@@ -60,5 +62,14 @@ async fn handle_socket(socket: WebSocket, state: Store) {
         _ = &mut send_task => recv_task.abort(),
     };
 
-    println!("Connection closed for {}", username_log);
+    println!("Connection closed for {}", &username);
+}
+
+trait Client {
+    fn on_init() {
+
+    }
+    fn on_message() {
+
+    }
 }
