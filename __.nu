@@ -25,6 +25,9 @@ export def send [
 }
 
 export def test [] {
+    $env.APP_KAFKA_ENABLE = 1
+    $env.APP_KAFKA_CONSUMER_TOPIC = 'chat'
+    $env.APP_KAFKA_PRODUCER_TOPIC = 'ai'
     let ji = job spawn { cargo run }
     sleep 1sec
     websocat ws://localhost:3000/channel

@@ -3,10 +3,25 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
+pub struct KafkaConsumer {
+    pub broker: String,
+    pub topic: String,
+    pub group: String
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct KafkaProducer {
+    pub broker: String,
+    pub topic: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
 pub struct Kafka {
     pub enable: bool,
-    pub consumer: String,
-    pub producer: String
+    pub consumer: KafkaConsumer,
+    pub producer: KafkaProducer
 }
 
 #[derive(Debug, Deserialize)]
