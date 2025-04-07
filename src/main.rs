@@ -18,8 +18,9 @@ async fn main() {
         .nest("/admin", admin_router())
         .with_state(shared);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    println!("WebSocket chat server running on http://127.0.0.1:3000");
+    let addr = "0.0.0.0:3000";
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    println!("Listening on {}", addr);
     axum::serve(listener, app).await.unwrap();
 }
 
