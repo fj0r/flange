@@ -2,6 +2,8 @@ use axum::{extract::State, http::StatusCode, routing::{get, post}, Json, Router}
 use serde::Deserialize;
 
 use super::{message, shared::SharedState};
+use super::error::AppError;
+
 
 #[derive(Deserialize)]
 struct Envelope {
@@ -12,7 +14,7 @@ struct Envelope {
 async fn send(
     State(state): State<SharedState>,
     Json(payload): Json<Envelope>
-) -> (StatusCode, Json<Vec<String>>) {
+) -> Result<(StatusCode, Json<Vec<String>>), AppError> {
     let s = state.read().unwrap();
     let mut succ = Vec::new();
     for r in payload.receiver {
@@ -23,7 +25,7 @@ async fn send(
             succ.push(r);
         }
     }
-    (StatusCode::OK, succ.into())
+    Ok((StatusCode::OK, succ.into()))
 }
 
 

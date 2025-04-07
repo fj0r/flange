@@ -8,9 +8,10 @@ mod libs;
 use libs::channel::ws_handler;
 use libs::admin::admin_router;
 use libs::shared::Shared;
+use anyhow::{Result, Ok};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let shared = Arc::new(RwLock::new(Shared::init()));
 
     let app = Router::new()
@@ -19,8 +20,9 @@ async fn main() {
         .with_state(shared);
 
     let addr = "0.0.0.0:3000";
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     println!("Listening on {}", addr);
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await?;
+    Ok(())
 }
 
