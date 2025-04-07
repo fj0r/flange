@@ -29,7 +29,7 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
 
     let msg = ChatMessage {
         user: "System".to_string(),
-        message: format!("Welcome, {}!", &username),
+        message: format!("Welcome, {}!", &username).into(),
     };
     tx.send(msg).ok();
 
@@ -39,7 +39,7 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
             if let Ok(text) = msg.to_text() {
                 let chat_msg = ChatMessage {
                     user: un.clone(),
-                    message: text.to_string(),
+                    message: text.into(),
                 };
 
                 if tx.send(chat_msg).is_err() {

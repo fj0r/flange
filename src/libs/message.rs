@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
     pub user: String,
-    // TODO: dynamic Json
-    pub message: String,
+    pub message: Value,
 }
 
