@@ -6,14 +6,15 @@ def cmpl-act [] {
     [Message Layout test]
 }
 
-export def send [receiver:string@cmpl-sender
+export def send [
     message
-    --sender: string = 'unknown'
-    --act: string@cmpl-act = 'Message'
+    --receiver(-r): list<string@cmpl-sender> = []
+    --sender(-s): string = 'unknown'
+    --act(-a): string@cmpl-act = 'Message'
 ] {
     let host = "http://localhost:3000/admin/message"
     let data = {
-        receiver: [$receiver],
+        receiver: $receiver,
         message: {
             act: $act,
             user: $sender,

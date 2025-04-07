@@ -16,13 +16,21 @@ async fn send(
     Json(payload): Json<Envelope>
 ) -> Result<(StatusCode, Json<Vec<String>>), AppError> {
     let s = state.read().unwrap();
-    let mut succ = Vec::new();
-    for r in payload.receiver {
-        if s.sender.contains_key(&r) {
-            let x = s.sender.get(&r);
-            let x = x.unwrap().lock().unwrap().clone();
-            let _ = x.send(payload.message.clone());
-            succ.push(r);
+    let mut succ: Vec<String> = Vec::new();
+    if payload.receiver.is_empty() {
+        for (n, c) in s.sender.iter() {
+            let c = c.lock().unwrap().clone();
+            let _ = c.send(payload.message.clone());
+            succ.push(n.into());
+        }
+    } else {
+        for r in payload.receiver {
+            if s.sender.contains_key(&r) {
+                let x = s.sender.get(&r);
+                let x = x.unwrap().lock().unwrap().clone();
+                let _ = x.send(payload.message.clone());
+                succ.push(r);
+            }
         }
     }
     Ok((StatusCode::OK, succ.into()))
