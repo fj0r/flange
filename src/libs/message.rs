@@ -4,6 +4,6 @@ use serde_json::Value;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
     pub user: String,
-    pub message: Value,
+    pub content: Value,
 }
 

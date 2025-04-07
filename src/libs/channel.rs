@@ -28,18 +28,19 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
         .sender.insert(key, Arc::new(Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
-        user: "System".to_string(),
-        message: format!("Welcome, {}!", &username).into(),
+        user: "System".to_owned(),
+        content: format!("Welcome, {}!", &username).into(),
     };
     tx.send(msg).ok();
 
     let un = username.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
+            // text protocol of ws
             if let Ok(text) = msg.to_text() {
                 let chat_msg = ChatMessage {
                     user: un.clone(),
-                    message: text.into(),
+                    content: serde_json::to_value(text).unwrap(),
                 };
 
                 if tx.send(chat_msg).is_err() {

@@ -8,7 +8,7 @@ use super::error::AppError;
 #[derive(Deserialize)]
 struct Envelope {
     receiver: Vec<String>,
-    content: message::ChatMessage
+    message: message::ChatMessage
 }
 
 async fn send(
@@ -21,7 +21,7 @@ async fn send(
         if s.sender.contains_key(&r) {
             let x = s.sender.get(&r);
             let x = x.unwrap().lock().unwrap().clone();
-            let _ = x.send(payload.content.clone());
+            let _ = x.send(payload.message.clone());
             succ.push(r);
         }
     }

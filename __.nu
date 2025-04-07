@@ -2,15 +2,22 @@ def cmpl-sender [] {
     http get http://localhost:3000/admin/users
 }
 
+def cmpl-act [] {
+    [Message Layout test]
+}
+
 export def send [receiver:string@cmpl-sender
     message
     --sender: string = 'unknown'
+    --act: string@cmpl-act = 'Message'
 ] {
     let host = "http://localhost:3000/admin/message"
     let data = {
         receiver: [$receiver],
-        content: {
-            user: $sender, message: $message
+        message: {
+            act: $act,
+            user: $sender,
+            content: $message
         }
     }
     http post --content-type application/json $host $data
