@@ -8,5 +8,6 @@ axum = { version = "0.8.3", features = ["ws"] }
 futures = { version = "0.3.31" }
 rand = "0.9.0"
 serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 tokio = { version = "1.44.2", features = ['full'] }
 

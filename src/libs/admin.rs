@@ -12,16 +12,18 @@ struct Envelope {
 async fn send(
     State(state): State<SharedState>,
     Json(payload): Json<Envelope>
-) -> (StatusCode, String) {
+) -> (StatusCode, Json<Vec<String>>) {
     let s = state.read().unwrap();
+    let mut succ = Vec::new();
     for r in payload.receiver {
         if s.sender.contains_key(&r) {
             let x = s.sender.get(&r);
             let x = x.unwrap().lock().unwrap().clone();
-            x.send(payload.content.clone());
+            let _ = x.send(payload.content.clone());
+            succ.push(r);
         }
     }
-    (StatusCode::OK, "ok".to_owned())
+    (StatusCode::OK, succ.into())
 }
 
 

@@ -51,7 +51,7 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv() {
-            let text = format!("{}: {}", msg.user, msg.message);
+            let text = serde_json::to_string(&msg).unwrap();
             if sender.send(axum::extract::ws::Message::Text(text.into())).await.is_err() {
                 break;
             }

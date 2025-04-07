@@ -15,3 +15,10 @@ export def send [receiver:string@cmpl-sender
     }
     http post --content-type application/json $host $data
 }
+
+export def test [] {
+    let ji = job spawn { cargo run }
+    sleep 1sec
+    websocat ws://localhost:3000/channel
+    job kill $ji
+}
