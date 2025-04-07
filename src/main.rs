@@ -15,7 +15,7 @@ use libs::settings::Settings;
 async fn main() -> Result<()> {
     let settings = Settings::new()?;
 
-    dbg!(settings);
+    dbg!(settings.kafka);
 
     let shared = Arc::new(RwLock::new(Shared::init()));
 

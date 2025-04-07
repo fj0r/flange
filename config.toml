@@ -1,1 +1,4 @@
 [kafka]
+enable = false
+consumer = ''
+producer = ''

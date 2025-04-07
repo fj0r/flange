@@ -3,15 +3,16 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct Kafka {
-    consumer: Option<String>,
-    producer: Option<String>
+pub struct Kafka {
+    pub enable: bool,
+    pub consumer: String,
+    pub producer: String
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
-    kafka: Option<Kafka>
+    pub kafka: Kafka
 }
 
 impl Settings {
