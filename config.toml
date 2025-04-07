@@ -9,3 +9,7 @@ group = 'ws'
 [kafka.producer]
 broker = 'localhost:9092'
 topic = 'ai'
+
+[webhook]
+enable = false
+endpoint = 'http://localhost:8000'

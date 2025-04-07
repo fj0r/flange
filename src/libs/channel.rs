@@ -23,9 +23,8 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     let (tx, rx) = mpsc::channel::<ChatMessage>();
     let username = format!("user_{}", rand::random::<u32>() % 1000);
 
-    let key = username.clone();
     state.write().unwrap()
-        .sender.insert(key, Arc::new(Mutex::new(tx.clone())));
+        .sender.insert(username.clone(), Arc::new(Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
         user: "System".to_owned(),
@@ -43,7 +42,9 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
                     content: serde_json::to_value(text).unwrap(),
                 };
 
-                if tx.send(chat_msg).is_err() {
+                // TODO: send to webhook or kafka
+                println!("[ws] {:?}", &chat_msg);
+                if false && tx.send(chat_msg).is_err() {
                     break;
                 }
             }
@@ -53,6 +54,7 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv() {
             let text = serde_json::to_string(&msg).unwrap();
+            // to ws client
             if sender.send(axum::extract::ws::Message::Text(text.into())).await.is_err() {
                 break;
             }

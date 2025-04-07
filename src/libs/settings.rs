@@ -6,7 +6,7 @@ use serde::Deserialize;
 pub struct KafkaConsumer {
     pub broker: String,
     pub topic: String,
-    pub group: String
+    pub group: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,13 +21,22 @@ pub struct KafkaProducer {
 pub struct Kafka {
     pub enable: bool,
     pub consumer: KafkaConsumer,
-    pub producer: KafkaProducer
+    pub producer: KafkaProducer,
+}
+
+
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct Webhook {
+    pub enable: bool,
+    pub endpoint: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
-    pub kafka: Kafka
+    pub kafka: Kafka,
+    pub webhook: Webhook,
 }
 
 impl Settings {
