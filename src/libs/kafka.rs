@@ -1,13 +1,12 @@
 use super::settings::{KafkaConsumer, KafkaProducer};
-use futures::channel::mpsc::SendError;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
-use kafka::error::Error as KafkaError;
 use kafka::producer::{Producer, Record, RequiredAcks};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::sync::mpsc;
 use std::time::Duration;
 use tokio::task::spawn_blocking;
+use super::message::MessageQueue;
 
 pub struct KafkaManager<T>
 where
@@ -31,8 +30,13 @@ where
             producer,
         }
     }
+}
 
-    pub fn run(&mut self) -> &mut Self {
+impl<T> MessageQueue<T> for KafkaManager<T>
+where
+    T: Send + Serialize + DeserializeOwned + 'static,
+{
+    fn run(&mut self) {
         let (producer_tx, producer_rx) = mpsc::channel::<T>();
 
         spawn_blocking(move || {
@@ -82,14 +86,17 @@ where
 
         self.tx = Some(producer_tx);
         self.rx = Some(consumer_rx);
-
-        self
     }
 
-    pub fn send_message(&self, value: T) -> Result<(), SendError> {
+    fn send(&self, value: T) -> Result<(), mpsc::SendError<T>> {
         if let Some(tx) = &self.tx {
             let _ = tx.send(value).unwrap();
         }
         Ok(())
+    }
+
+    fn listen (&self) -> &Option<mpsc::Receiver<T>> {
+
+        &self.rx
     }
 }

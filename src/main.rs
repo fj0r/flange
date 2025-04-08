@@ -1,4 +1,5 @@
 use axum::{Router, routing::get};
+use libs::message::MessageQueue;
 use serde_json::Value;
 use std::sync::{Arc, RwLock};
 
@@ -19,10 +20,12 @@ async fn main() -> Result<()> {
     let shared = Arc::new(RwLock::new(Shared::init()));
 
     let mq = if settings.kafka.enable {
-        Some(KafkaManager::<Value>::new(
+        let mut mq = KafkaManager::<Value>::new(
             settings.kafka.consumer.clone(),
             settings.kafka.producer.clone(),
-        ))
+        );
+        mq.run();
+        Some(mq)
     } else {
         None
     };
