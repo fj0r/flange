@@ -8,8 +8,9 @@ pub struct ChatMessage {
     pub content: Value,
 }
 
-pub trait MessageQueue<T> {
+pub trait MessageQueue {
+    type Item;
     fn run (&mut self);
-    fn send (&self, value: T) -> Result<(), SendError<T>>;
-    fn listen (&self) -> &Option<Receiver<T>>;
+    fn send (&self, value: Self::Item) -> Result<(), SendError<Self::Item>>;
+    fn listen (&self) -> &Option<Receiver<Self::Item>>;
 }

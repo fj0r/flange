@@ -32,10 +32,11 @@ where
     }
 }
 
-impl<T> MessageQueue<T> for KafkaManager<T>
+impl<T> MessageQueue for KafkaManager<T>
 where
     T: Send + Serialize + DeserializeOwned + 'static,
 {
+    type Item = T;
     fn run(&mut self) {
         let (producer_tx, producer_rx) = mpsc::channel::<T>();
 

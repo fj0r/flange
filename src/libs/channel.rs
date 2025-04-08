@@ -7,8 +7,12 @@ use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::sync::{Arc, Mutex, mpsc};
 
-use super::message::ChatMessage;
+use super::message::{ChatMessage, MessageQueue};
 use super::shared::SharedState;
+
+pub fn get_handler(mq: impl MessageQueue) {
+
+}
 
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
