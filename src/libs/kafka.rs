@@ -41,9 +41,9 @@ where
     type Item = T;
     fn run(&mut self) {
         let (producer_tx, producer_rx) = mpsc::channel::<Self::Item>();
-
+        let producer_cfg = self.producer.clone();
         spawn_blocking(move || {
-            let mut producer = Producer::from_hosts(vec!["localhost:9092".to_string()])
+            let mut producer = Producer::from_hosts(producer_cfg.broker)
                 .with_ack_timeout(Duration::from_secs(1))
                 .with_required_acks(RequiredAcks::One)
                 .create()
@@ -54,7 +54,7 @@ where
                 if let Err(e) = producer.send(&Record {
                     key: (),
                     value,
-                    topic: "",
+                    topic: &producer_cfg.topic,
                     partition: -1,
                 }) {
                     eprintln!("Failed to send message to Kafka: {}", e);
@@ -63,10 +63,11 @@ where
         });
 
         let (consumer_tx, consumer_rx) = mpsc::channel::<Self::Item>();
+        let consumer_cfg = self.consumer.clone();
         spawn_blocking(move || {
-            let mut consumer = Consumer::from_hosts(vec!["localhost:9092".to_string()])
-                .with_topic("chat_messages".to_string())
-                .with_group("chat_group".to_string())
+            let mut consumer = Consumer::from_hosts(consumer_cfg.broker)
+                .with_topic(consumer_cfg.topic)
+                .with_group(consumer_cfg.group.unwrap_or("default".to_owned()))
                 .with_fallback_offset(FetchOffset::Earliest)
                 .with_offset_storage(Some(GroupOffsetStorage::Kafka))
                 .create()
