@@ -13,7 +13,7 @@ pub struct ChatMessage {
 }
 
 pub trait MessageQueue {
-    type Item;
+    type Item: Send + Serialize + serde::de::DeserializeOwned;
     fn run(&mut self);
     fn send(&self, value: Self::Item) -> Result<(), SendError<Self::Item>>;
     fn listen(&self) -> &Option<Arc<Mutex<Receiver<Self::Item>>>>;

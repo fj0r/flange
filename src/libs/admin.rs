@@ -23,7 +23,7 @@ async fn send(
     let mut succ: Vec<String> = Vec::new();
     if payload.receiver.is_empty() {
         for (n, c) in s.sender.iter() {
-            let c = c.lock().unwrap().clone();
+            let c = c.lock().unwrap();
             let _ = c.send(payload.message.clone());
             succ.push(n.into());
         }
@@ -31,7 +31,7 @@ async fn send(
         for r in payload.receiver {
             if s.sender.contains_key(&r) {
                 let x = s.sender.get(&r);
-                let x = x.unwrap().lock().unwrap().clone();
+                let x = x.unwrap().lock().unwrap();
                 let _ = x.send(payload.message.clone());
                 succ.push(r);
             }

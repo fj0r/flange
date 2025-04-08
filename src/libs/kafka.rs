@@ -40,7 +40,7 @@ where
 {
     type Item = T;
     fn run(&mut self) {
-        let (producer_tx, producer_rx) = mpsc::channel::<T>();
+        let (producer_tx, producer_rx) = mpsc::channel::<Self::Item>();
 
         spawn_blocking(move || {
             let mut producer = Producer::from_hosts(vec!["localhost:9092".to_string()])
@@ -62,7 +62,7 @@ where
             }
         });
 
-        let (consumer_tx, consumer_rx) = mpsc::channel::<T>();
+        let (consumer_tx, consumer_rx) = mpsc::channel::<Self::Item>();
         spawn_blocking(move || {
             let mut consumer = Consumer::from_hosts(vec!["localhost:9092".to_string()])
                 .with_topic("chat_messages".to_string())
@@ -75,7 +75,7 @@ where
             loop {
                 for ms in consumer.poll().unwrap().iter() {
                     for m in ms.messages() {
-                        if let Ok(value) = serde_json::from_slice::<T>(m.value) {
+                        if let Ok(value) = serde_json::from_slice::<Self::Item>(m.value) {
                             if let Err(e) = consumer_tx.send(value) {
                                 eprintln!("Failed to send message from consumer: {}", e);
                             }
@@ -91,14 +91,14 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    fn send(&self, value: T) -> Result<(), mpsc::SendError<T>> {
+    fn send(&self, value: Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
         if let Some(tx) = &self.tx {
             let _ = tx.send(value).unwrap();
         }
         Ok(())
     }
 
-    fn listen(&self) -> &Option<Arc<Mutex<mpsc::Receiver<T>>>> {
+    fn listen(&self) -> &Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
         &self.rx
     }
 }

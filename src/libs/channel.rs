@@ -20,8 +20,11 @@ use super::shared::SharedState;
 //     )
 // }
 
-pub async fn handle_socket(socket: WebSocket, state: SharedState, mq: Option<impl MessageQueue>) {
-    let _ = mq;
+pub async fn handle_socket(
+    socket: WebSocket,
+    state: SharedState,
+    mq: Arc<Mutex<Option<impl MessageQueue<Item = ChatMessage>>>>,
+) {
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, rx) = mpsc::channel::<ChatMessage>();
@@ -40,6 +43,7 @@ pub async fn handle_socket(socket: WebSocket, state: SharedState, mq: Option<imp
     tx.send(msg).ok();
 
     let un = username.clone();
+
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
@@ -49,11 +53,11 @@ pub async fn handle_socket(socket: WebSocket, state: SharedState, mq: Option<imp
                     content: serde_json::to_value(text).unwrap(),
                 };
 
-                // TODO: send to webhook or kafka
+                //if let Some(m) = *mq.lock().unwrap() {
+                //    m.send(chat_msg);
+                //}
+
                 println!("[ws] {:?}", &chat_msg);
-                if false && tx.send(chat_msg).is_err() {
-                    break;
-                }
             }
         }
     });

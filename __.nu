@@ -89,9 +89,6 @@ export def 'rpk up' [
     if $dry_run {
         print $"($env.CONTCTL) ($args | str join ' ')"
     } else {
-        let args = $args
-        job spawn {
-            ^$env.CONTCTL ...$args
-        }
+        ^$env.CONTCTL ...$args
     }
 }
