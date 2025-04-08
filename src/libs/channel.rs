@@ -1,11 +1,8 @@
-use axum::{
-    extract::ws::{WebSocket, WebSocketUpgrade},
-    response::Response,
-};
-
-use axum::extract::State;
+use axum::extract::ws::WebSocket;
+//use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{Arc, mpsc};
+use futures::lock::Mutex;
 
 use super::message::{ChatMessage, MessageQueue};
 use super::shared::SharedState;
@@ -34,7 +31,7 @@ pub async fn handle_socket(
         .write()
         .unwrap()
         .sender
-        .insert(username.clone(), Arc::new(Mutex::new(tx.clone())));
+        .insert(username.clone(), Arc::new(std::sync::Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
         user: "System".to_owned(),
@@ -43,6 +40,13 @@ pub async fn handle_socket(
     tx.send(msg).ok();
 
     let un = username.clone();
+    let mq = mq.lock().await;
+
+        // let chat_msg = ChatMessage {
+        //     user: un.clone(),
+        //     content: "asdf".into(),
+        // };
+        // mq.as_ref().map(|x| x.send(chat_msg));
 
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
@@ -53,9 +57,9 @@ pub async fn handle_socket(
                     content: serde_json::to_value(text).unwrap(),
                 };
 
-                //if let Some(m) = *mq.lock().unwrap() {
-                //    m.send(chat_msg);
-                //}
+                // if let Some(m) = mq {
+                //     m.send(chat_msg);
+                // }
 
                 println!("[ws] {:?}", &chat_msg);
             }

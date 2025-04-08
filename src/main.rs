@@ -1,6 +1,7 @@
 use axum::{Router, routing::get};
+use futures::lock::Mutex;
 use libs::message::MessageQueue;
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, RwLock};
 
 mod libs;
 use anyhow::{Ok, Result};
@@ -31,8 +32,8 @@ async fn main() -> Result<()> {
     } else {
         None
     };
-    let mq = Arc::new(Mutex::new(mq));
 
+    let mq = Arc::new(Mutex::new(mq));
     let app = Router::new()
         .route(
             "/channel",
