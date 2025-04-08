@@ -1,23 +1,31 @@
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{Router, routing::get};
+use serde_json::Value;
 use std::sync::{Arc, RwLock};
 
 mod libs;
-use libs::channel::ws_handler;
+use anyhow::{Ok, Result};
 use libs::admin::admin_router;
-use libs::shared::Shared;
-use anyhow::{Result, Ok};
+use libs::channel::ws_handler;
+use libs::kafka::KafkaManager;
 use libs::settings::Settings;
+use libs::shared::Shared;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let settings = Settings::new()?;
 
-    dbg!(settings);
+    dbg!(&settings);
 
     let shared = Arc::new(RwLock::new(Shared::init()));
+
+    let mq = if settings.kafka.enable {
+        Some(KafkaManager::<Value>::new(
+            settings.kafka.consumer.clone(),
+            settings.kafka.producer.clone(),
+        ))
+    } else {
+        None
+    };
 
     let app = Router::new()
         .route("/channel", get(ws_handler))
@@ -31,4 +39,3 @@ async fn main() -> Result<()> {
     axum::serve(listener, app).await?;
     Ok(())
 }
-

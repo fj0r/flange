@@ -1,76 +1,95 @@
-use std::time::Duration;
+use super::settings::{KafkaConsumer, KafkaProducer};
+use futures::channel::mpsc::SendError;
+use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use kafka::error::Error as KafkaError;
 use kafka::producer::{Producer, Record, RequiredAcks};
-use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+use std::sync::mpsc;
+use std::time::Duration;
+use tokio::task::spawn_blocking;
 
-fn produce_message<'a, 'b>(
-    data: &'a [u8],
-    topic: &'b str,
-    brokers: Vec<String>,
-) -> Result<(), KafkaError> {
-    println!("About to publish a message at {:?} to: {}", brokers, topic);
-
-    // ~ create a producer. this is a relatively costly operation, so
-    // you'll do this typically once in your application and re-use
-    // the instance many times.
-    let mut producer = Producer::from_hosts(brokers)
-        // ~ give the brokers one second time to ack the message
-        .with_ack_timeout(Duration::from_secs(1))
-        // ~ require only one broker to ack the message
-        .with_required_acks(RequiredAcks::One)
-        // ~ build the producer with the above settings
-        .create()?;
-
-    // ~ now send a single message.  this is a synchronous/blocking
-    // operation.
-
-    // ~ we're sending 'data' as a 'value'. there will be no key
-    // associated with the sent message.
-
-    // ~ we leave the partition "unspecified" - this is a negative
-    // partition - which causes the producer to find out one on its
-    // own using its underlying partitioner.
-    producer.send(&Record {
-        topic,
-        partition: -1,
-        key: (),
-        value: data,
-    })?;
-
-    // ~ we can achieve exactly the same as above in a shorter way with
-    // the following call
-    producer.send(&Record::from_value(topic, data))?;
-
-    Ok(())
+pub struct KafkaManager<T>
+where
+    T: Send + Serialize + DeserializeOwned,
+{
+    rx: Option<mpsc::Receiver<T>>,
+    tx: Option<mpsc::Sender<T>>,
+    consumer: KafkaConsumer,
+    producer: KafkaProducer,
 }
 
-fn consume_messages(group: String, topic: String, brokers: Vec<String>) -> Result<(), KafkaError> {
-    let mut con = Consumer::from_hosts(brokers)
-        .with_topic(topic)
-        .with_group(group)
-        .with_fallback_offset(FetchOffset::Earliest)
-        .with_offset_storage(Some(GroupOffsetStorage::Kafka))
-        .create()?;
-
-    loop {
-        let mss = con.poll()?;
-        if mss.is_empty() {
-            println!("No messages available right now.");
-            return Ok(());
+impl<T> KafkaManager<T>
+where
+    T: Send + Serialize + DeserializeOwned + 'static,
+{
+    pub fn new(consumer: KafkaConsumer, producer: KafkaProducer) -> Self {
+        Self {
+            rx: None,
+            tx: None,
+            consumer,
+            producer,
         }
+    }
 
-        for ms in mss.iter() {
-            for m in ms.messages() {
-                println!(
-                    "{}:{}@{}: {:?}",
-                    ms.topic(),
-                    ms.partition(),
-                    m.offset,
-                    m.value
-                );
+    pub fn run(&mut self) -> &mut Self {
+        let (producer_tx, producer_rx) = mpsc::channel::<T>();
+
+        spawn_blocking(move || {
+            let mut producer = Producer::from_hosts(vec!["localhost:9092".to_string()])
+                .with_ack_timeout(Duration::from_secs(1))
+                .with_required_acks(RequiredAcks::One)
+                .create()
+                .expect("Failed to create Kafka producer");
+
+            while let Ok(value) = producer_rx.recv() {
+                let value = serde_json::to_string(&value).unwrap();
+                if let Err(e) = producer.send(&Record {
+                    key: (),
+                    value,
+                    topic: "",
+                    partition: -1,
+                }) {
+                    eprintln!("Failed to send message to Kafka: {}", e);
+                }
             }
-            let _ = con.consume_messageset(ms);
+        });
+
+        let (consumer_tx, consumer_rx) = mpsc::channel::<T>();
+        spawn_blocking(move || {
+            let mut consumer = Consumer::from_hosts(vec!["localhost:9092".to_string()])
+                .with_topic("chat_messages".to_string())
+                .with_group("chat_group".to_string())
+                .with_fallback_offset(FetchOffset::Earliest)
+                .with_offset_storage(Some(GroupOffsetStorage::Kafka))
+                .create()
+                .expect("Failed to create Kafka consumer");
+
+            loop {
+                for ms in consumer.poll().unwrap().iter() {
+                    for m in ms.messages() {
+                        if let Ok(value) = serde_json::from_slice::<T>(m.value) {
+                            if let Err(e) = consumer_tx.send(value) {
+                                eprintln!("Failed to send message from consumer: {}", e);
+                            }
+                        }
+                    }
+                    consumer.consume_messageset(ms).unwrap();
+                }
+                consumer.commit_consumed().unwrap();
+            }
+        });
+
+        self.tx = Some(producer_tx);
+        self.rx = Some(consumer_rx);
+
+        self
+    }
+
+    pub fn send_message(&self, value: T) -> Result<(), SendError> {
+        if let Some(tx) = &self.tx {
+            let _ = tx.send(value).unwrap();
         }
-        con.commit_consumed()?;
+        Ok(())
     }
 }

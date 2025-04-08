@@ -6,4 +6,3 @@ pub struct ChatMessage {
     pub user: String,
     pub content: Value,
 }
-

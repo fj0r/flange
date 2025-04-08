@@ -2,12 +2,12 @@
 enable = false
 
 [kafka.consumer]
-broker = 'localhost:9092'
+broker = ['localhost:9092']
 topic = 'chat'
 group = 'ws'
 
 [kafka.producer]
-broker = 'localhost:9092'
+broker = ['localhost:9092']
 topic = 'ai'
 
 [webhook]

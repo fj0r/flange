@@ -1,18 +1,18 @@
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct KafkaConsumer {
-    pub broker: String,
+    pub broker: Vec<String>,
     pub topic: String,
-    pub group: String,
+    pub group: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct KafkaProducer {
-    pub broker: String,
+    pub broker: Vec<String>,
     pub topic: String,
 }
 
@@ -23,7 +23,6 @@ pub struct Kafka {
     pub consumer: KafkaConsumer,
     pub producer: KafkaProducer,
 }
-
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]

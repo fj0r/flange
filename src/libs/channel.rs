@@ -1,11 +1,11 @@
 use axum::{
+    extract::ws::{WebSocket, WebSocketUpgrade},
     response::IntoResponse,
-    extract::ws::{WebSocket, WebSocketUpgrade}
 };
 
 use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 
 use super::message::ChatMessage;
 use super::shared::SharedState;
@@ -23,8 +23,11 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     let (tx, rx) = mpsc::channel::<ChatMessage>();
     let username = format!("user_{}", rand::random::<u32>() % 1000);
 
-    state.write().unwrap()
-        .sender.insert(username.clone(), Arc::new(Mutex::new(tx.clone())));
+    state
+        .write()
+        .unwrap()
+        .sender
+        .insert(username.clone(), Arc::new(Mutex::new(tx.clone())));
 
     let msg = ChatMessage {
         user: "System".to_owned(),
@@ -55,7 +58,11 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
         while let Ok(msg) = rx.recv() {
             let text = serde_json::to_string(&msg).unwrap();
             // to ws client
-            if sender.send(axum::extract::ws::Message::Text(text.into())).await.is_err() {
+            if sender
+                .send(axum::extract::ws::Message::Text(text.into()))
+                .await
+                .is_err()
+            {
                 break;
             }
         }
@@ -67,15 +74,10 @@ async fn handle_socket(socket: WebSocket, state: SharedState) {
     };
 
     println!("Connection closed for {}", &username);
-    state.write().unwrap()
-        .sender.remove(&username);
+    state.write().unwrap().sender.remove(&username);
 }
 
 trait Client {
-    fn on_init() {
-
-    }
-    fn on_message() {
-
-    }
+    fn on_init() {}
+    fn on_message() {}
 }
