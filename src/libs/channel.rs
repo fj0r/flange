@@ -1,6 +1,6 @@
 use axum::{
     extract::ws::{WebSocket, WebSocketUpgrade},
-    response::IntoResponse,
+    response::Response,
 };
 
 use axum::extract::State;
@@ -10,18 +10,18 @@ use std::sync::{Arc, Mutex, mpsc};
 use super::message::{ChatMessage, MessageQueue};
 use super::shared::SharedState;
 
-pub fn get_handler(mq: impl MessageQueue) {
+// pub async fn ws_handler(
+//     mq: Option<impl MessageQueue + Send>,
+// ) -> Box<dyn FnOnce(WebSocketUpgrade, State<SharedState>) -> Response> {
+//     Box::new(
+//         move |ws: WebSocketUpgrade, State(state): State<SharedState>|  {
+//             ws.on_upgrade(|socket| handle_socket(socket, state, mq))
+//         }
+//     )
+// }
 
-}
-
-pub async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<SharedState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_socket(socket, state))
-}
-
-async fn handle_socket(socket: WebSocket, state: SharedState) {
+pub async fn handle_socket(socket: WebSocket, state: SharedState, mq: Option<impl MessageQueue>) {
+    let _ = mq;
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, rx) = mpsc::channel::<ChatMessage>();

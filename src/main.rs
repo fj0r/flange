@@ -5,11 +5,13 @@ use std::sync::{Arc, RwLock};
 
 mod libs;
 use anyhow::{Ok, Result};
+use axum::extract::State;
+use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
-use libs::channel::ws_handler;
+use libs::channel::handle_socket;
 use libs::kafka::KafkaManager;
 use libs::settings::Settings;
-use libs::shared::Shared;
+use libs::shared::{Shared, SharedState};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -31,7 +33,14 @@ async fn main() -> Result<()> {
     };
 
     let app = Router::new()
-        .route("/channel", get(ws_handler))
+        .route(
+            "/channel",
+            get(
+                |ws: WebSocketUpgrade, State(state): State<SharedState>| async move {
+                    ws.on_upgrade(|socket| handle_socket(socket, state, mq))
+                },
+            ),
+        )
         .nest("/admin", admin_router())
         .with_state(shared);
 

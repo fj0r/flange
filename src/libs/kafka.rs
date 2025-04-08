@@ -1,18 +1,20 @@
+use super::message::MessageQueue;
 use super::settings::{KafkaConsumer, KafkaProducer};
+use futures::lock::Mutex;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use kafka::producer::{Producer, Record, RequiredAcks};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use std::sync::mpsc;
+use std::sync::{Arc, mpsc};
 use std::time::Duration;
 use tokio::task::spawn_blocking;
-use super::message::MessageQueue;
 
+#[derive(Clone)]
 pub struct KafkaManager<T>
 where
     T: Send + Serialize + DeserializeOwned,
 {
-    rx: Option<mpsc::Receiver<T>>,
+    rx: Option<Arc<Mutex<mpsc::Receiver<T>>>>,
     tx: Option<mpsc::Sender<T>>,
     consumer: KafkaConsumer,
     producer: KafkaProducer,
@@ -86,7 +88,7 @@ where
         });
 
         self.tx = Some(producer_tx);
-        self.rx = Some(consumer_rx);
+        self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
     fn send(&self, value: T) -> Result<(), mpsc::SendError<T>> {
@@ -96,8 +98,7 @@ where
         Ok(())
     }
 
-    fn listen (&self) -> &Option<mpsc::Receiver<T>> {
-
+    fn listen(&self) -> &Option<Arc<Mutex<mpsc::Receiver<T>>>> {
         &self.rx
     }
 }
