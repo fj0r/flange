@@ -74,15 +74,17 @@ where
                 .expect("Failed to create Kafka consumer");
 
             loop {
-                for ms in consumer.poll().unwrap().iter() {
-                    for m in ms.messages() {
-                        if let Ok(value) = serde_json::from_slice::<Self::Item>(m.value) {
-                            if let Err(e) = consumer_tx.send(value) {
-                                eprintln!("Failed to send message from consumer: {}", e);
+                if let Ok(c) = consumer.poll() {
+                    for ms in c.iter() {
+                        for m in ms.messages() {
+                            if let Ok(value) = serde_json::from_slice::<Self::Item>(m.value) {
+                                if let Err(e) = consumer_tx.send(value) {
+                                    eprintln!("Failed to send message from consumer: {}", e);
+                                }
                             }
                         }
+                        consumer.consume_messageset(ms).unwrap();
                     }
-                    consumer.consume_messageset(ms).unwrap();
                 }
                 consumer.commit_consumed().unwrap();
             }

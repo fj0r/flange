@@ -27,11 +27,10 @@ pub async fn handle_socket(
     let (tx, rx) = mpsc::channel::<ChatMessage>();
     let username = format!("user_{}", rand::random::<u32>() % 1000);
 
-    state
-        .write()
-        .unwrap()
-        .sender
-        .insert(username.clone(), Arc::new(std::sync::Mutex::new(tx.clone())));
+
+    if let Ok(mut s) = state.write() {
+        s.sender.insert(username.clone(), Arc::new(tx.clone()));
+    }
 
     let msg = ChatMessage {
         user: "System".to_owned(),
@@ -86,7 +85,9 @@ pub async fn handle_socket(
     };
 
     println!("Connection closed for {}", &username);
-    state.write().unwrap().sender.remove(&username);
+    if let Ok(mut s) = state.write() {
+        s.sender.remove(&username);
+    }
 }
 
 trait Client {

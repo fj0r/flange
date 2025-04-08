@@ -1,10 +1,10 @@
 use super::message::ChatMessage;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock, mpsc};
+use std::sync::{Arc, RwLock, mpsc};
 
 #[derive(Debug, Clone)]
 pub struct Shared {
-    pub sender: HashMap<String, Arc<Mutex<mpsc::Sender<ChatMessage>>>>,
+    pub sender: HashMap<String, Arc<mpsc::Sender<ChatMessage>>>,
 }
 
 impl Shared {
