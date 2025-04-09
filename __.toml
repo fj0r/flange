@@ -1,4 +1,4 @@
 [server]
 host = 'localhost:3000'
 [redpanda]
-admin = '172.178.5.123:28082'
+admin = 'localhost:18082'

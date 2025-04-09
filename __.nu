@@ -42,21 +42,33 @@ export def test [] {
 }
 
 
-export def 'rpk send' [...data -p:int=0 --topic(-t):string = 'logs'] {
+export def 'rpk send' [...data -p:int=0 --topic(-t):string@"rpk topic list"] {
     let c = open $CONFIG
     let data = { records: ($data | wrap value | insert partition $p) } | to json -r
     curl -sL -X POST $"http://($c.redpanda.admin)/topics/($topic)" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
 }
 
-export def 'rpk send-log' [num:int=0, --batch:int=10, --topic(-t):string = 'logs'] {
-    cat data/ingress-log.jsonl | from json -o | range $num..($num + $batch)
-    | rpk send --topic $topic ...$in
-}
-
-export def 'rpk subscribe' [topic:string="logs"] {
+export def 'rpk subscribe' [topic:string@"rpk topic list"] {
     let c = open $CONFIG
     let data = { topics: [$topic] } | to json -r
     curl -sL $"http://($c.redpanda.admin)/topics/($topic)/partitions/0/records?offset=0&timeout=1000&max_bytes=100000" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+}
+
+export def 'rpk topic list' [] {
+    let c = open $CONFIG
+    http get $"http://($c.redpanda.admin)/topics" | from json
+}
+
+export def 'rpk topic create' [name:string] {
+    mut args = [exec -t redpanda]
+    $args ++= [rpk topic create $name]
+    ^$env.CONTCTL ...$args
+}
+
+export def 'rpk topic delete' [name:string@'rpk topic list'] {
+    mut args = [exec -t redpanda]
+    $args ++= [rpk topic delete $name]
+    ^$env.CONTCTL ...$args
 }
 
 export def 'rpk up' [
