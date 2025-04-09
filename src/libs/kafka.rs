@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::sync::{Arc, mpsc};
 use std::time::Duration;
+use std::fmt::Debug;
 use tokio::task::spawn_blocking;
 
 #[derive(Clone)]
@@ -36,7 +37,7 @@ where
 
 impl<T> MessageQueue for KafkaManager<T>
 where
-    T: Clone + Send + Serialize + DeserializeOwned + 'static,
+    T: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
 {
     type Item = T;
 

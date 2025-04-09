@@ -5,6 +5,7 @@ use std::sync::{
     Arc,
     mpsc::{Receiver, SendError},
 };
+use std::fmt::Debug;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
@@ -13,7 +14,7 @@ pub struct ChatMessage {
 }
 
 pub trait MessageQueue {
-    type Item: Send + Serialize + serde::de::DeserializeOwned;
+    type Item: Debug + Send + Serialize + serde::de::DeserializeOwned;
 
     #[allow(unused)]
     async fn run(&mut self);
