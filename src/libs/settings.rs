@@ -28,14 +28,16 @@ pub struct Kafka {
 #[allow(unused)]
 pub struct Webhook {
     pub enable: bool,
+    pub event: String,
     pub endpoint: String,
+    pub method: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
     pub kafka: Kafka,
-    pub webhook: Webhook,
+    pub webhooks: Vec<Webhook>,
 }
 
 impl Settings {
