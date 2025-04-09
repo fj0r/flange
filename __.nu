@@ -1,5 +1,8 @@
+const CONFIG = path self __.toml
+
 def cmpl-sender [] {
-    http get http://localhost:3000/admin/users
+    let c = open $CONFIG
+    http get $"http://($c.server.host)/admin/users"
 }
 
 def cmpl-act [] {
@@ -12,7 +15,8 @@ export def send [
     --sender(-s): string = 'unknown'
     --act(-a): string@cmpl-act = 'Message'
 ] {
-    let host = "http://localhost:3000/admin/message"
+    let c = open $CONFIG
+    let host = $"http://($c.server.host)/admin/message"
     let data = {
         receiver: $receiver,
         message: {
@@ -25,19 +29,23 @@ export def send [
 }
 
 export def test [] {
+    let c = open $CONFIG
     $env.APP_KAFKA_ENABLE = 1
     $env.APP_KAFKA_CONSUMER_TOPIC = 'chat'
     $env.APP_KAFKA_PRODUCER_TOPIC = 'ai'
     let ji = job spawn { cargo run }
     sleep 1sec
-    websocat ws://localhost:3000/channel
+    do -i {
+        websocat $"ws://($c.server.host)/channel"
+    }
     job kill $ji
 }
 
 
 export def 'rpk send' [...data -p:int=0 --topic(-t):string = 'logs'] {
+    let c = open $CONFIG
     let data = { records: ($data | wrap value | insert partition $p) } | to json -r
-    curl -sL -X POST $"http://172.178.5.123:28082/topics/($topic)" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+    curl -sL -X POST $"http://($c.redpanda.admin)/topics/($topic)" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
 }
 
 export def 'rpk send-log' [num:int=0, --batch:int=10, --topic(-t):string = 'logs'] {
@@ -46,8 +54,9 @@ export def 'rpk send-log' [num:int=0, --batch:int=10, --topic(-t):string = 'logs
 }
 
 export def 'rpk subscribe' [topic:string="logs"] {
+    let c = open $CONFIG
     let data = { topics: [$topic] } | to json -r
-    curl -sL $"http://172.178.5.123:28082/topics/($topic)/partitions/0/records?offset=0&timeout=1000&max_bytes=100000" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+    curl -sL $"http://($c.redpanda.admin)/topics/($topic)/partitions/0/records?offset=0&timeout=1000&max_bytes=100000" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
 }
 
 export def 'rpk up' [
