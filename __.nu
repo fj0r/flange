@@ -53,38 +53,44 @@ export def 'rpk subscribe' [topic:string="logs"] {
 export def 'rpk up' [
     --dry-run
 ] {
-    let image = 'docker.redpanda.com/redpandadata/redpanda:v24.2.10'
+    let image = 'redpandadata/redpanda:latest'
+    mut args = [run -d --name redpanda]
     let ports = {
         '18081': 18081
         '18082': 18082
-        '9092': 19092
+        '19092': 19092
+        '19644': 9644
     }
-    mut args = [run --rm --name redpanda]
     for i in ($ports | transpose k v) {
         $args ++= [-p $"($i.k):($i.v)"]
     }
+    let envs = {
+    }
+    for i in ($envs | transpose k v) {
+        $args ++= [-e $"($i.k)=($i.v)"]
+    }
     $args ++= [$image]
     $args ++= [
-      redpanda
-      start
-      --kafka-addr
-      internal://0.0.0.0:9092,external://0.0.0.0:19092
-      --advertise-kafka-addr
-      internal://127.0.0.1:9092,external://172.178.5.123:19092
-      --pandaproxy-addr
-      internal://0.0.0.0:8082,external://0.0.0.0:18082
-      --advertise-pandaproxy-addr
-      internal://redpanda:8082,external://172.178.5.123:18082
-      --schema-registry-addr
-      internal://0.0.0.0:8081,external://0.0.0.0:18081
-      #--rpc-addr redpanda:33145
-      #--advertise-rpc-addr redpanda:33145
-      --overprovisioned
-      --smp 1
-      --memory 1G
-      --reserve-memory 0M
-      --node-id 0
-      --check=false
+        redpanda
+        start
+        --kafka-addr
+        'internal://0.0.0.0:9092,external://0.0.0.0:19092'
+        --advertise-kafka-addr
+        'internal://127.0.0.1:9092,external://localhost:19092'
+        --pandaproxy-addr
+        'internal://0.0.0.0:8082,external://0.0.0.0:18082'
+        --advertise-pandaproxy-addr
+        'internal://127.0.0.1:8082,external://localhost:18082'
+        --schema-registry-addr
+        'internal://0.0.0.0:8081,external://0.0.0.0:18081'
+        --rpc-addr
+        localhost:33145
+        --advertise-rpc-addr
+        localhost:33145
+        --mode
+        dev-container
+        --smp 1
+        --default-log-level=info
     ]
     if $dry_run {
         print $"($env.CONTCTL) ($args | str join ' ')"
