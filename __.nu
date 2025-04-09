@@ -62,6 +62,18 @@ export def 'rpk consume' [topic:string@"rpk topic list"] {
     ^$env.CONTCTL ...$args
 }
 
+export def 'rpk group list' [] {
+    mut args = [exec -it redpanda]
+    $args ++= [rpk group list]
+    ^$env.CONTCTL ...$args | from ssv
+}
+
+export def 'rpk group delete' [group:string@"rpk group list"] {
+    mut args = [exec -it redpanda]
+    $args ++= [rpk group delete $topic]
+    ^$env.CONTCTL ...$args
+}
+
 export def 'rpk topic list' [] {
     let c = open $CONFIG
     http get $"http://($c.redpanda.admin)/topics" | from json

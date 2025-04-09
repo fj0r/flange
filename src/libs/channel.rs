@@ -39,12 +39,6 @@ pub async fn handle_socket(
 
     let un = username.clone();
 
-        // let chat_msg = ChatMessage {
-        //     user: un.clone(),
-        //     content: "asdf".into(),
-        // };
-        // mq.as_ref().map(|x| x.send(chat_msg));
-
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
