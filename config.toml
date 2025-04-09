@@ -10,6 +10,8 @@ group = 'ws'
 broker = ['localhost:9092']
 topic = 'ai'
 
-[webhook]
+[[webhooks]]
+event = 'history'
 enable = false
-endpoint = 'http://localhost:8000'
+endpoint = 'http://localhost:8000/v1/history'
+method = 'post'
