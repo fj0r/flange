@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
             settings.kafka.consumer.clone(),
             settings.kafka.producer.clone(),
         );
-        mq.run();
+        mq.run().await;
         Some(mq)
     } else {
         None

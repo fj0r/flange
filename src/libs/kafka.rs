@@ -39,7 +39,8 @@ where
     T: Send + Serialize + DeserializeOwned + 'static,
 {
     type Item = T;
-    fn run(&mut self) {
+
+    async fn run(&mut self) {
         let (producer_tx, producer_rx) = mpsc::channel::<Self::Item>();
         let producer_cfg = self.producer.clone();
         spawn_blocking(move || {
