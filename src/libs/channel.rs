@@ -39,6 +39,7 @@ pub async fn handle_socket(
 
     let un = username.clone();
 
+    let mqrx = mq.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
@@ -48,12 +49,19 @@ pub async fn handle_socket(
                     content: serde_json::to_value(text).unwrap(),
                 };
 
-                if let Some(ref m) = *mq.lock().unwrap() {
+                // send to MQ
+                if let Some(ref m) = *mqrx.lock().unwrap() {
                     let _ = m.send(&chat_msg);
                 }
 
                 println!("[ws] {:?}", &chat_msg);
             }
+        }
+    });
+
+    let mut listen_task = tokio::spawn(async move {
+        if let Some(ref _m) = *mq.lock().unwrap() {
+            // TODO:
         }
     });
 
@@ -73,6 +81,7 @@ pub async fn handle_socket(
 
     tokio::select! {
         _ = &mut recv_task => send_task.abort(),
+        _ = &mut listen_task => listen_task.abort(),
         _ = &mut send_task => recv_task.abort(),
     };
 

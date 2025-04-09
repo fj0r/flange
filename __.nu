@@ -70,7 +70,7 @@ export def 'rpk group list' [] {
 
 export def 'rpk group delete' [group:string@"rpk group list"] {
     mut args = [exec -it redpanda]
-    $args ++= [rpk group delete $topic]
+    $args ++= [rpk group delete $group]
     ^$env.CONTCTL ...$args
 }
 
