@@ -53,6 +53,7 @@ where
 
             while let Ok(value) = producer_rx.recv() {
                 let value = serde_json::to_string(&value).unwrap();
+                dbg!(&value);
                 if let Err(e) = producer.send(&Record {
                     key: (),
                     value,

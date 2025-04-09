@@ -45,13 +45,21 @@ export def test [] {
 export def 'rpk send' [...data -p:int=0 --topic(-t):string@"rpk topic list"] {
     let c = open $CONFIG
     let data = { records: ($data | wrap value | insert partition $p) } | to json -r
-    curl -sL -X POST $"http://($c.redpanda.admin)/topics/($topic)" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+    http post -H [
+        Content-Type application/vnd.kafka.json.v2+json
+    ] $"http://($c.redpanda.admin)/topics/($topic)" $data
 }
 
 export def 'rpk subscribe' [topic:string@"rpk topic list"] {
     let c = open $CONFIG
     let data = { topics: [$topic] } | to json -r
-    curl -sL $"http://($c.redpanda.admin)/topics/($topic)/partitions/0/records?offset=0&timeout=1000&max_bytes=100000" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+    curl -sL $"http://($c.redpanda.admin)/topics/($topic)/partitions/0/records?offset=0" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
+}
+
+export def 'rpk consume' [topic:string@"rpk topic list"] {
+    mut args = [exec -it redpanda]
+    $args ++= [rpk topic consume $topic]
+    ^$env.CONTCTL ...$args
 }
 
 export def 'rpk topic list' [] {
