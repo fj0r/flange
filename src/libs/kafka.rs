@@ -36,7 +36,7 @@ where
 
 impl<T> MessageQueue for KafkaManager<T>
 where
-    T: Send + Serialize + DeserializeOwned + 'static,
+    T: Clone + Send + Serialize + DeserializeOwned + 'static,
 {
     type Item = T;
 
@@ -95,9 +95,9 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    async fn send(&self, value: Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
+    async fn send(&self, value: &Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
         if let Some(tx) = &self.tx {
-            let _ = tx.send(value).unwrap();
+            let _ = tx.send(value.clone()).unwrap();
         }
         Ok(())
     }

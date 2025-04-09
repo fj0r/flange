@@ -1,8 +1,7 @@
 use axum::extract::ws::WebSocket;
 //use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::sync::{Arc, mpsc};
-use futures::lock::Mutex;
+use std::sync::{Arc, Mutex, mpsc};
 
 use super::message::{ChatMessage, MessageQueue};
 use super::shared::SharedState;
@@ -20,7 +19,7 @@ use super::shared::SharedState;
 pub async fn handle_socket(
     socket: WebSocket,
     state: SharedState,
-    mq: Arc<Mutex<Option<impl MessageQueue<Item = ChatMessage>>>>,
+    mq: Arc<Mutex<Option<impl MessageQueue<Item = ChatMessage> + std::marker::Send + 'static>>>,
 ) {
     let (mut sender, mut receiver) = socket.split();
 
@@ -39,7 +38,6 @@ pub async fn handle_socket(
     tx.send(msg).ok();
 
     let un = username.clone();
-    let mq = mq.lock().await;
 
         // let chat_msg = ChatMessage {
         //     user: un.clone(),
@@ -56,9 +54,9 @@ pub async fn handle_socket(
                     content: serde_json::to_value(text).unwrap(),
                 };
 
-                // if let Some(m) = mq {
-                //     m.send(chat_msg);
-                // }
+                if let Some(ref m) = *mq.lock().unwrap() {
+                    let _ = m.send(&chat_msg);
+                }
 
                 println!("[ws] {:?}", &chat_msg);
             }
@@ -90,6 +88,7 @@ pub async fn handle_socket(
     }
 }
 
+#[allow(unused)]
 trait Client {
     fn on_init() {}
     fn on_message() {}

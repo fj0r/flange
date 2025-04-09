@@ -1,7 +1,6 @@
 use axum::{Router, routing::get};
-use futures::lock::Mutex;
 use libs::message::MessageQueue;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 mod libs;
 use anyhow::{Ok, Result};
