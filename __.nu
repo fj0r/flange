@@ -1,6 +1,6 @@
 const CONFIG = path self __.toml
 
-def cmpl-sender [] {
+export def receiver [] {
     let c = open $CONFIG
     http get $"http://($c.server.host)/admin/users"
 }
@@ -11,7 +11,7 @@ def cmpl-act [] {
 
 export def send [
     message
-    --receiver(-r): list<string@cmpl-sender> = []
+    --receiver(-r): list<string@receiver> = []
     --sender(-s): string = 'unknown'
 ] {
     let c = open $CONFIG
