@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
         let mqrx = mq.get_rx();
         tokio::spawn(async move {
             if let Some(rx) = mqrx {
-                let rx = rx.lock().unwrap();
+                let rx = rx.lock().expect("rx lock");
                 while let x = rx.recv()  {
                     dbg!(&x);
                 }

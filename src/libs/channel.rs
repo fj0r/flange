@@ -43,31 +43,34 @@ pub async fn handle_socket(
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             if let Ok(text) = msg.to_text() {
-                let chat_msg = ChatMessage {
-                    user: un.clone(),
-                    content: serde_json::to_value(text).unwrap(),
-                };
+                if let Ok(value) = serde_json::to_value(text) {
+                    let chat_msg = ChatMessage {
+                        user: un.clone(),
+                        content: value,
+                    };
 
-                // send to MQ
-                if let Some(ref m) = mqtx {
-                    let _ = m.send(chat_msg.clone());
+                    // send to MQ
+                    if let Some(ref m) = mqtx {
+                        let _ = m.send(chat_msg.clone());
+                    }
+
+                    println!("[ws] {:?}", &chat_msg);
                 }
-
-                println!("[ws] {:?}", &chat_msg);
             }
         }
     });
 
     let mut send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv() {
-            let text = serde_json::to_string(&msg).unwrap();
-            // to ws client
-            if sender
-                .send(axum::extract::ws::Message::Text(text.into()))
-                .await
-                .is_err()
-            {
-                break;
+            if let Ok(text) = serde_json::to_string(&msg) {
+                // to ws client
+                if sender
+                    .send(axum::extract::ws::Message::Text(text.into()))
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
             }
         }
     });

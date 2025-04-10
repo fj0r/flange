@@ -51,7 +51,7 @@ where
                 .expect("Failed to create Kafka producer");
 
             while let Ok(value) = producer_rx.recv() {
-                let value = serde_json::to_string(&value).unwrap();
+                let value = serde_json::to_string(&value).expect("serde to string");
                 if let Err(e) = producer.send(&Record {
                     key: (),
                     value,
@@ -85,10 +85,10 @@ where
                                 }
                             }
                         }
-                        consumer.consume_messageset(ms).unwrap();
+                        consumer.consume_messageset(ms).expect("consume_messageset");
                     }
                 }
-                consumer.commit_consumed().unwrap();
+                consumer.commit_consumed().expect("commit_consumed");
             }
         });
 
