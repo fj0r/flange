@@ -13,14 +13,12 @@ export def send [
     message
     --receiver(-r): list<string@cmpl-sender> = []
     --sender(-s): string = 'unknown'
-    --act(-a): string@cmpl-act = 'Message'
 ] {
     let c = open $CONFIG
     let host = $"http://($c.server.host)/admin/message"
     let data = {
         receiver: $receiver,
         message: {
-            act: $act,
             user: $sender,
             content: $message
         }
