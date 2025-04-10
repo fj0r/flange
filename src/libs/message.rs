@@ -20,9 +20,6 @@ pub trait MessageQueue {
     async fn run(&mut self);
 
     #[allow(unused)]
-    fn send(&self, value: &Self::Item) -> Result<(), SendError<Self::Item>>;
-
-    #[allow(unused)]
     fn get_rx(&self) -> Option<Arc<Mutex<Receiver<Self::Item>>>>;
 
     #[allow(unused)]

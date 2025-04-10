@@ -96,12 +96,6 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    fn send(&self, value: &Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
-        if let Some(tx) = &self.tx {
-            tx.send(value.clone()).unwrap();
-        }
-        Ok(())
-    }
 
     fn get_rx(&self) -> Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
         self.rx.clone()
