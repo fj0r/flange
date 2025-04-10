@@ -1,8 +1,8 @@
-use futures::lock::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::{
     Arc,
+    Mutex,
     mpsc::{Sender, Receiver, SendError},
 };
 use std::fmt::Debug;
