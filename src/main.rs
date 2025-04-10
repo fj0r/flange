@@ -1,6 +1,6 @@
 use axum::{Router, routing::get};
 use libs::message::MessageQueue;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc,RwLock};
 
 mod libs;
 use anyhow::{Ok, Result};
@@ -27,18 +27,27 @@ async fn main() -> Result<()> {
             settings.kafka.producer.clone(),
         );
         mq.run().await;
+        let mqrx = mq.get_rx();
+        tokio::spawn(async move {
+            if let Some(rx) = mqrx {
+                let rx = rx.lock().unwrap();
+                while let x = rx.recv()  {
+                    dbg!(&x);
+                }
+            }
+        });
         Some(mq)
     } else {
         None
     };
 
-    let mq = Arc::new(Mutex::new(mq));
+    let mqtx = mq.as_ref().and_then(|m| m.get_tx());
     let app = Router::new()
         .route(
             "/channel",
             get(
                 |ws: WebSocketUpgrade, State(state): State<SharedState>| async move {
-                    ws.on_upgrade(|socket| handle_socket(socket, state, mq))
+                    ws.on_upgrade(|socket| handle_socket(socket, state, mqtx))
                 },
             ),
         )

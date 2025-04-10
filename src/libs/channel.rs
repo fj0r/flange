@@ -1,9 +1,9 @@
 use axum::extract::ws::WebSocket;
 //use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{Arc, mpsc};
 
-use super::message::{ChatMessage, MessageQueue};
+use super::message::ChatMessage;
 use super::shared::SharedState;
 
 // pub async fn ws_handler(
@@ -19,7 +19,7 @@ use super::shared::SharedState;
 pub async fn handle_socket(
     socket: WebSocket,
     state: SharedState,
-    mq: Arc<Mutex<Option<impl MessageQueue<Item = ChatMessage> + std::marker::Send + 'static>>>,
+    mqtx: Option<mpsc::Sender<ChatMessage>>,
 ) {
     let (mut sender, mut receiver) = socket.split();
 
@@ -39,7 +39,6 @@ pub async fn handle_socket(
 
     let un = username.clone();
 
-    let mqtx = mq.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
@@ -50,18 +49,12 @@ pub async fn handle_socket(
                 };
 
                 // send to MQ
-                if let Some(ref m) = *mqtx.lock().unwrap() {
-                    let _ = m.send(&chat_msg);
+                if let Some(ref m) = mqtx {
+                    let _ = m.send(chat_msg.clone());
                 }
 
                 println!("[ws] {:?}", &chat_msg);
             }
-        }
-    });
-
-    let mut listen_task = tokio::spawn(async move {
-        if let Some(ref _m) = *mq.lock().unwrap() {
-            // TODO:
         }
     });
 
@@ -80,9 +73,8 @@ pub async fn handle_socket(
     });
 
     tokio::select! {
-        _ = &mut recv_task => send_task.abort(),
-        _ = &mut listen_task => listen_task.abort(),
-        _ = &mut send_task => recv_task.abort(),
+        _ = &mut recv_task => recv_task.abort(),
+        _ = &mut send_task => send_task.abort(),
     };
 
     println!("Connection closed for {}", &username);

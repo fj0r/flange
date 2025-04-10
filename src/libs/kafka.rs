@@ -1,11 +1,10 @@
 use super::message::MessageQueue;
 use super::settings::{KafkaConsumer, KafkaProducer};
-use futures::lock::Mutex;
 use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use kafka::producer::{Producer, Record, RequiredAcks};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use std::sync::{Arc, mpsc};
+use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
 use std::fmt::Debug;
 use tokio::task::spawn_blocking;
@@ -79,6 +78,7 @@ where
                 if let Ok(c) = consumer.poll() {
                     for ms in c.iter() {
                         for m in ms.messages() {
+                            dbg!(&m);
                             if let Ok(value) = serde_json::from_slice::<Self::Item>(m.value) {
                                 if let Err(e) = consumer_tx.send(value) {
                                     eprintln!("Failed to send message from consumer: {}", e);
