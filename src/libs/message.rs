@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::{
     Arc,
-    mpsc::{Receiver, SendError},
+    mpsc::{Sender, Receiver, SendError},
 };
 use std::fmt::Debug;
 
@@ -20,8 +20,11 @@ pub trait MessageQueue {
     async fn run(&mut self);
 
     #[allow(unused)]
-    async fn send(&self, value: &Self::Item) -> Result<(), SendError<Self::Item>>;
+    fn send(&self, value: &Self::Item) -> Result<(), SendError<Self::Item>>;
 
     #[allow(unused)]
-    fn listen(&self) -> Option<Arc<Mutex<Receiver<Self::Item>>>>;
+    fn get_rx(&self) -> Option<Arc<Mutex<Receiver<Self::Item>>>>;
+
+    #[allow(unused)]
+    fn get_tx(&self) -> Option<Sender<Self::Item>>;
 }

@@ -39,7 +39,7 @@ pub async fn handle_socket(
 
     let un = username.clone();
 
-    let mqrx = mq.clone();
+    let mqtx = mq.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
@@ -50,7 +50,7 @@ pub async fn handle_socket(
                 };
 
                 // send to MQ
-                if let Some(ref m) = *mqrx.lock().unwrap() {
+                if let Some(ref m) = *mqtx.lock().unwrap() {
                     let _ = m.send(&chat_msg);
                 }
 

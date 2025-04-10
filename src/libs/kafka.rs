@@ -53,7 +53,6 @@ where
 
             while let Ok(value) = producer_rx.recv() {
                 let value = serde_json::to_string(&value).unwrap();
-                dbg!(&value);
                 if let Err(e) = producer.send(&Record {
                     key: (),
                     value,
@@ -97,14 +96,18 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    async fn send(&self, value: &Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
+    fn send(&self, value: &Self::Item) -> Result<(), mpsc::SendError<Self::Item>> {
         if let Some(tx) = &self.tx {
-            let _ = tx.send(value.clone()).unwrap();
+            tx.send(value.clone()).unwrap();
         }
         Ok(())
     }
 
-    fn listen(&self) -> Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
+    fn get_rx(&self) -> Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
         self.rx.clone()
+    }
+
+    fn get_tx(&self) -> Option<mpsc::Sender<Self::Item>> {
+        self.tx.clone()
     }
 }
