@@ -26,15 +26,24 @@ export def send [
     http post --content-type application/json $host $data
 }
 
-export def test [] {
-    let c = open $CONFIG
+export def 'dev serve' [] {
+    $env.RUST_BACKTRACE = 1
     $env.APP_KAFKA_ENABLE = 1
     $env.APP_KAFKA_CONSUMER_TOPIC = 'chat'
     $env.APP_KAFKA_PRODUCER_TOPIC = 'ai'
-    let ji = job spawn { cargo run }
+    cargo run
+}
+
+export def 'dev client' [] {
+    let c = open $CONFIG
+    websocat $"ws://($c.server.host)/channel"
+}
+
+export def 'dev test' [] {
+    let ji = job spawn { dev serve }
     sleep 1sec
     do -i {
-        websocat $"ws://($c.server.host)/channel"
+        dev client
     }
     job kill $ji
 }
