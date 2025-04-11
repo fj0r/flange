@@ -32,7 +32,7 @@ pub async fn handle_socket(
     }
 
     let msg = ChatMessage {
-        user: "System".to_owned(),
+        user: "system".into(),
         content: format!("Welcome, {}!", &username).into(),
     };
     tx.send(msg).ok();

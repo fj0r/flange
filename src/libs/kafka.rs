@@ -68,7 +68,7 @@ where
         spawn_blocking(move || {
             let mut consumer = Consumer::from_hosts(consumer_cfg.broker)
                 .with_topic(consumer_cfg.topic)
-                .with_group(consumer_cfg.group.unwrap_or("default".to_owned()))
+                .with_group(consumer_cfg.group.unwrap_or("default".into()))
                 .with_fallback_offset(FetchOffset::Earliest)
                 .with_offset_storage(Some(GroupOffsetStorage::Kafka))
                 .create()
