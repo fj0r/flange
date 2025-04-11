@@ -4,9 +4,9 @@ use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 use kafka::producer::{Producer, Record, RequiredAcks};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
-use std::fmt::Debug;
 use tokio::task::spawn_blocking;
 
 #[derive(Clone)]
@@ -95,7 +95,6 @@ where
         self.tx = Some(producer_tx);
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
-
 
     fn get_rx(&self) -> Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
         self.rx.clone()
