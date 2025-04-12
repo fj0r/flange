@@ -1,5 +1,5 @@
 [kafka]
-enable = true
+enable = false
 
 [kafka.consumer]
 broker = ['localhost:19092']

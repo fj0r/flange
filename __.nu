@@ -28,7 +28,7 @@ export def send [
 
 export def 'dev serve' [] {
     $env.RUST_BACKTRACE = 1
-    $env.APP_KAFKA_ENABLE = 1
+    #$env.APP_KAFKA_ENABLE = 1
     $env.APP_KAFKA_CONSUMER_TOPIC = 'chat'
     $env.APP_KAFKA_PRODUCER_TOPIC = 'ai'
     cargo run

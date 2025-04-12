@@ -40,15 +40,15 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-pub fn admin_router() -> Router<SharedState> {
-    async fn list(State(state): State<SharedState>) -> axum::Json<Vec<String>> {
-        if let Ok(s) = state.read() {
-            Json(s.sender.keys().cloned().collect::<Vec<String>>())
-        } else {
-            vec![].into()
-        }
+async fn list(State(state): State<SharedState>) -> axum::Json<Vec<String>> {
+    if let Ok(s) = state.read() {
+        Json(s.sender.keys().cloned().collect::<Vec<String>>())
+    } else {
+        vec![].into()
     }
+}
 
+pub fn admin_router() -> Router<SharedState> {
     Router::new()
         .route("/users", get(list))
         .route("/message", post(send))
