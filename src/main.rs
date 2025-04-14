@@ -1,6 +1,5 @@
 use axum::{Router, routing::get};
 use libs::message::MessageQueue;
-use std::sync::{Arc,RwLock};
 
 mod libs;
 use anyhow::{Ok, Result};
@@ -10,7 +9,7 @@ use libs::admin::admin_router;
 use libs::channel::handle_socket;
 use libs::kafka::KafkaManager;
 use libs::settings::Settings;
-use libs::shared::{Shared, SharedState};
+use libs::shared::SharedState;
 use libs::message::ChatMessage;
 
 #[tokio::main]
@@ -19,7 +18,7 @@ async fn main() -> Result<()> {
 
     dbg!(&settings);
 
-    let shared = Arc::new(RwLock::new(Shared::init()));
+    let shared = SharedState::new();
 
     let mq = if settings.kafka.enable {
         let mut mq: KafkaManager<ChatMessage> = KafkaManager::new(

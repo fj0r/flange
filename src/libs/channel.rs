@@ -28,7 +28,7 @@ pub async fn handle_socket(
 
 
     if let Ok(mut s) = state.write() {
-        s.sender.insert(username.clone(), Arc::new(tx.clone()));
+        s.sender.insert(username.clone(), tx.clone());
     }
 
     let msg = ChatMessage {
