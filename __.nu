@@ -18,10 +18,8 @@ export def send [
     let host = $"http://($c.server.host)/admin/message"
     let data = {
         receiver: $receiver,
-        message: {
-            user: $sender,
-            content: $message
-        }
+        sender: $sender,
+        content: $message
     }
     http post --content-type application/json $host $data
 }

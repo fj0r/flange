@@ -12,6 +12,7 @@ use super::{message, shared::SharedState};
 #[derive(Deserialize)]
 struct Envelope {
     receiver: Vec<String>,
+    #[serde(flatten)]
     message: message::ChatMessage,
 }
 

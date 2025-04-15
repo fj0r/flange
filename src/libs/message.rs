@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
-    pub user: String,
+    pub sender: String,
     pub content: Value,
 }
 

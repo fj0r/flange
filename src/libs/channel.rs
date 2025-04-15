@@ -32,7 +32,7 @@ pub async fn handle_socket(
     }
 
     let msg = ChatMessage {
-        user: "system".into(),
+        sender: "system".into(),
         content: format!("Welcome, {}!", &username).into(),
     };
     tx.send(msg).ok();
@@ -45,7 +45,7 @@ pub async fn handle_socket(
             if let Ok(text) = msg.to_text() {
                 if let Ok(value) = serde_json::to_value(text) {
                     let chat_msg = ChatMessage {
-                        user: un.clone(),
+                        sender: un.clone(),
                         content: value,
                     };
 
