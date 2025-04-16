@@ -27,8 +27,11 @@ pub async fn handle_socket(
     let username = format!("user_{}", rand::random::<u32>() % 1000);
 
 
-    if let Ok(mut s) = state.write() {
-        s.sender.insert(username.clone(), tx.clone());
+    {
+        let s1 = state.clone();
+        if let Ok(mut s) = s1.write() {
+            s.sender.insert(username.clone(), tx.clone());
+        }
     }
 
     let msg = ChatMessage {
