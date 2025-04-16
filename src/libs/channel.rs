@@ -36,15 +36,19 @@ pub async fn handle_socket(
         }
     }
 
-    let msg = ChatMessage {
-        sender: "system".into(),
-        content: format!("Welcome, {}!", &username).into(),
-    };
-    tx.send(msg).ok();
 
     let un = username.clone();
 
     let mut recv_task = tokio::spawn(async move {
+
+        /* FIXME: stuck
+        let msg = ChatMessage {
+            sender: "system".into(),
+            content: format!("Welcome, {}!", un).into(),
+        };
+        tx.send(msg).ok();
+        */
+
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             if let Ok(text) = msg.to_text() {
