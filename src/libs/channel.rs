@@ -23,7 +23,7 @@ pub async fn handle_socket(
 ) {
     let (mut sender, mut receiver) = socket.split();
 
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<ChatMessage>(100);
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<ChatMessage>();
     let username: String;
 
     {

@@ -1,11 +1,11 @@
 use super::message::ChatMessage;
 use std::collections::HashMap;
-use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tokio::sync::{mpsc::Sender, Mutex, MutexGuard};
+use std::sync::Arc;
+use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
 
 #[derive(Debug, Clone)]
 pub struct Shared {
-    pub sender: HashMap<String, Sender<ChatMessage>>,
+    pub sender: HashMap<String, UnboundedSender<ChatMessage>>,
     pub count: u128,
 }
 

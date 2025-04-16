@@ -24,14 +24,14 @@ async fn send(
     let s = state.read().await;
         if payload.receiver.is_empty() {
             for (n, c) in s.sender.iter() {
-                let _ = c.send(payload.message.clone()).await;
+                let _ = c.send(payload.message.clone());
                 succ.push(n.into());
             }
         } else {
             for r in payload.receiver {
                 if s.sender.contains_key(&r) {
                     if let Some(x) = s.sender.get(&r) {
-                        let _ = x.send(payload.message.clone()).await;
+                        let _ = x.send(payload.message.clone());
                         succ.push(r);
                     }
                 }
