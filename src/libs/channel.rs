@@ -24,12 +24,14 @@ pub async fn handle_socket(
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, rx) = mpsc::channel::<ChatMessage>();
-    let username = format!("user_{}", rand::random::<u32>() % 1000);
+    let mut username: String = "Unknown".to_string();
 
 
     {
         let s1 = state.clone();
         if let Ok(mut s) = s1.write() {
+            s.count += 1;
+            username = format!("user_{}", s.count);
             s.sender.insert(username.clone(), tx.clone());
         }
     }

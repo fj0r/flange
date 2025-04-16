@@ -5,12 +5,14 @@ use std::sync::{mpsc, Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard
 #[derive(Debug, Clone)]
 pub struct Shared {
     pub sender: HashMap<String, mpsc::Sender<ChatMessage>>,
+    pub count: u128,
 }
 
 impl Shared {
-    pub fn init() -> Self {
+    pub fn new() -> Self {
         Shared {
             sender: HashMap::new(),
+            count: 0,
         }
     }
 }
@@ -20,7 +22,7 @@ pub struct SharedState (Arc<RwLock<Shared>>);
 
 impl SharedState {
     pub fn new() -> Self {
-        SharedState(Arc::new(RwLock::new(Shared::init())))
+        SharedState(Arc::new(RwLock::new(Shared::new())))
     }
 
     pub fn read(&self) -> LockResult<RwLockReadGuard<Shared>> {
