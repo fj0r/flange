@@ -21,32 +21,28 @@ async fn send(
     Json(payload): Json<Envelope>,
 ) -> Result<(StatusCode, Json<Vec<String>>), AppError> {
     let mut succ: Vec<String> = Vec::new();
-    if let Ok(s) = state.read() {
+    let s = state.read().await;
         if payload.receiver.is_empty() {
             for (n, c) in s.sender.iter() {
-                let _ = c.send(payload.message.clone()).await.unwrap_or_else(|_| ());
+                let _ = c.send(payload.message.clone()).await;
                 succ.push(n.into());
             }
         } else {
             for r in payload.receiver {
                 if s.sender.contains_key(&r) {
                     if let Some(x) = s.sender.get(&r) {
-                        let _ = x.send(payload.message.clone()).await.unwrap_or_else(|_| ());
+                        let _ = x.send(payload.message.clone()).await;
                         succ.push(r);
                     }
                 }
             }
         }
-    }
     Ok((StatusCode::OK, succ.into()))
 }
 
 async fn list(State(state): State<SharedState>) -> axum::Json<Vec<String>> {
-    if let Ok(s) = state.read() {
+    let s = state.read().await;
         Json(s.sender.keys().cloned().collect::<Vec<String>>())
-    } else {
-        vec![].into()
-    }
 }
 
 pub fn admin_router() -> Router<SharedState> {

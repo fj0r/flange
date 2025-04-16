@@ -24,23 +24,19 @@ pub async fn handle_socket(
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, mut rx) = tokio::sync::mpsc::channel::<ChatMessage>(100);
-    let mut username: String = "Unknown".to_string();
-
+    let username: String;
 
     {
         let s1 = state.clone();
-        if let Ok(mut s) = s1.write() {
-            s.count += 1;
-            username = format!("user_{}", s.count);
-            s.sender.insert(username.clone(), tx.clone());
-        }
+        let mut s = s1.write().await;
+        s.count += 1;
+        username = format!("user_{}", s.count);
+        s.sender.insert(username.clone(), tx.clone());
     }
-
 
     let un = username.clone();
 
     let mut recv_task = tokio::spawn(async move {
-
         /* FIXME: stuck
         let msg = ChatMessage {
             sender: "system".into(),
@@ -90,9 +86,8 @@ pub async fn handle_socket(
     };
 
     println!("Connection closed for {}", &username);
-    if let Ok(mut s) = state.write() {
-        s.sender.remove(&username);
-    }
+    let mut s = state.write().await;
+    s.sender.remove(&username);
 }
 
 #[allow(unused)]
