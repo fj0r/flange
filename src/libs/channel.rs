@@ -23,7 +23,7 @@ pub async fn handle_socket(
 ) {
     let (mut sender, mut receiver) = socket.split();
 
-    let (tx, rx) = mpsc::channel::<ChatMessage>();
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<ChatMessage>(100);
     let mut username: String = "Unknown".to_string();
 
 
@@ -70,7 +70,7 @@ pub async fn handle_socket(
     });
 
     let mut send_task = tokio::spawn(async move {
-        while let Ok(msg) = rx.recv() {
+        while let Some(msg) = rx.recv().await {
             if let Ok(text) = serde_json::to_string(&msg) {
                 // to ws client
                 if sender
