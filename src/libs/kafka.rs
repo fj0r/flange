@@ -12,25 +12,30 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 use std::sync::Arc;
-use tokio::sync::{mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver}, Mutex};
 use std::time::Duration;
+use tokio::sync::{
+    Mutex,
+    mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
+};
 use tokio::task::spawn;
 use tracing::{info, warn};
 
 #[derive(Clone)]
-pub struct KafkaManager<T>
+pub struct KafkaManager<S, R>
 where
-    T: Send + Serialize + DeserializeOwned,
+    R: Send + Serialize + DeserializeOwned,
+    S: Send + Serialize + DeserializeOwned,
 {
-    rx: Option<Arc<Mutex<UnboundedReceiver<T>>>>,
-    tx: Option<UnboundedSender<T>>,
+    rx: Option<Arc<Mutex<UnboundedReceiver<R>>>>,
+    tx: Option<UnboundedSender<S>>,
     consumer: KafkaConsumer,
     producer: KafkaProducer,
 }
 
-impl<T> KafkaManager<T>
+impl<S, R> KafkaManager<S, R>
 where
-    T: Send + Serialize + DeserializeOwned + 'static,
+    S: Send + Serialize + DeserializeOwned + 'static,
+    R: Send + Serialize + DeserializeOwned + 'static,
 {
     pub fn new(consumer: KafkaConsumer, producer: KafkaProducer) -> Self {
         Self {
@@ -42,14 +47,16 @@ where
     }
 }
 
-impl<T> MessageQueue for KafkaManager<T>
+impl<S, R> MessageQueue for KafkaManager<S, R>
 where
-    T: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
+    S: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
+    R: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
 {
-    type Item = T;
+    type Sender = S;
+    type Receiver = R;
 
     async fn run(&mut self) {
-        let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Item>();
+        let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Sender>();
         let producer_cfg = self.producer.clone();
 
         let producer: FutureProducer = ClientConfig::new()
@@ -77,7 +84,7 @@ where
             }
         });
 
-        let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Item>();
+        let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Receiver>();
         let consumer_cfg = self.consumer.clone();
 
         let context = CustomContext;
@@ -95,7 +102,7 @@ where
             .expect("Failed to create Kafka consumer");
 
         spawn(async move {
-            let topic : Vec<&str> = consumer_cfg.topic.iter().map(<_>::as_ref).collect();
+            let topic: Vec<&str> = consumer_cfg.topic.iter().map(<_>::as_ref).collect();
 
             consumer
                 .subscribe(topic.as_slice())
@@ -113,7 +120,7 @@ where
                             }
                         };
 
-                        if let Ok(value) = serde_json::from_str::<Self::Item>(payload) {
+                        if let Ok(value) = serde_json::from_str::<Self::Receiver>(payload) {
                             if let Err(e) = consumer_tx.send(value) {
                                 eprintln!("Failed to send message from consumer: {}", e);
                             }
@@ -137,11 +144,11 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Item>>>> {
+    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Receiver>>>> {
         self.rx.clone()
     }
 
-    fn get_tx(&self) -> Option<UnboundedSender<Self::Item>> {
+    fn get_tx(&self) -> Option<UnboundedSender<Self::Sender>> {
         self.tx.clone()
     }
 }

@@ -1,5 +1,5 @@
 use axum::{Router, routing::get};
-use libs::message::{MessageQueue, ChatMessage};
+use libs::message::{ChatMessage, Envelope, MessageQueue};
 
 use tracing::info;
 use tracing_subscriber;
@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
     let shared = SharedState::new();
 
     let mq = if settings.kafka.enable {
-        let mut mq: KafkaManager<ChatMessage> = KafkaManager::new(
+        let mut mq: KafkaManager<ChatMessage, Envelope> = KafkaManager::new(
             settings.kafka.consumer.clone(),
             settings.kafka.producer.clone(),
         );

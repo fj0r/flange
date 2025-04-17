@@ -27,15 +27,16 @@ impl From<(String, Value)> for ChatMessage {
 }
 
 pub trait MessageQueue {
-    type Item: Debug + Send + Serialize + serde::de::DeserializeOwned;
+    type Receiver: Debug + Send + Serialize + serde::de::DeserializeOwned;
+    type Sender: Debug + Send + Serialize + serde::de::DeserializeOwned;
 
     #[allow(unused)]
     async fn run(&mut self);
 
     #[allow(unused)]
-    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Item>>>>;
+    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Receiver>>>>;
 
     #[allow(unused)]
-    fn get_tx(&self) -> Option<UnboundedSender<Self::Item>>;
+    fn get_tx(&self) -> Option<UnboundedSender<Self::Sender>>;
 }
 
