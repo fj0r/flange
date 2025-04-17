@@ -8,17 +8,16 @@
 //! tracing-subscriber = "0.3.19"
 //! ```
 
-use tracing::{info,warn};
+use tracing::{info, warn};
 use tracing_subscriber;
 
-use std::time::Duration;
 use rdkafka::config::ClientConfig;
 use rdkafka::message::{Header, OwnedHeaders};
 use rdkafka::producer::{FutureProducer, FutureRecord};
-use serde_json::{from_str, to_string, Value};
+use serde_json::{Value, from_str, to_string};
+use std::time::Duration;
 
-
-const JV: String = r#"
+static JV: &str = r#"
 {
   "sender": "test",
   "content": {
@@ -43,30 +42,33 @@ async fn produce(brokers: &str, topic_name: &str) {
         .create()
         .expect("Producer creation error");
 
-    let jv = from_str::<Value>(JV);
-    let jv = to_string(&jv);
+    let jv = from_str::<Value>(JV).unwrap();
+    let jv = to_string(&jv).unwrap();
     // This loop is non blocking: all messages will be sent one after the other, without waiting
     // for the results.
-    let futures = (0..5)
-        .map(|i| async move {
-            // The send operation on the topic returns a future, which will be
-            // completed once the result or failure from Kafka is received.
-            let delivery_status = producer
-                .send(
-                    FutureRecord::to(topic_name)
-                        .payload(&format!("Message {}", i))
-                        .key(&format!("Key {}", i))
-                        .headers(OwnedHeaders::new().insert(Header {
-                            key: "header_key",
-                            value: Some("header_value"),
-                        })),
-                    Duration::from_secs(0),
-                )
-                .await;
+    let futures = (0..1)
+        .map(|i| {
+            let value = jv.clone();
+            async move {
+                // The send operation on the topic returns a future, which will be
+                // completed once the result or failure from Kafka is received.
+                let delivery_status = producer
+                    .send(
+                        FutureRecord::to(topic_name)
+                            .payload(&value)
+                            .key(&format!("Key {}", i))
+                            .headers(OwnedHeaders::new().insert(Header {
+                                key: "header_key",
+                                value: Some("header_value"),
+                            })),
+                        Duration::from_secs(0),
+                    )
+                    .await;
 
-            // This will be executed when the result is received.
-            info!("Delivery status for message {} received", i);
-            delivery_status
+                // This will be executed when the result is received.
+                info!("Delivery status for message {} received", i);
+                delivery_status
+            }
         })
         .collect::<Vec<_>>();
 
@@ -78,7 +80,6 @@ async fn produce(brokers: &str, topic_name: &str) {
 
 #[tokio::main]
 async fn main() {
-
     tracing_subscriber::fmt::init();
 
     info!("start");

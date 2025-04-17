@@ -113,12 +113,7 @@ where
                             }
                         };
 
-                        let a = serde_json::from_str::<serde_json::Value>("{}").unwrap();
-                        let a = serde_json::to_string(&a).unwrap();
-                        dbg!(a);
-                        dbg!(payload);
                         if let Ok(value) = serde_json::from_str::<Self::Item>(payload) {
-                            info!("{value:?}");
                             if let Err(e) = consumer_tx.send(value) {
                                 eprintln!("Failed to send message from consumer: {}", e);
                             }

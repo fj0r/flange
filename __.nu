@@ -47,7 +47,7 @@ export def 'dev test' [] {
 }
 
 
-export def 'rpk send' [...data -p:int=0 --topic(-t):string@"rpk topic list"] {
+export def 'rpk send' [data -p:int=0 --topic(-t):string@"rpk topic list"] {
     let c = open $CONFIG
     let data = { records: ($data | wrap value | insert partition $p) } | to json -r
     http post -H [
