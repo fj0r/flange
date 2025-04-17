@@ -144,3 +144,13 @@ export def 'rpk up' [
         ^$env.CONTCTL ...$args
     }
 }
+
+export def 'rpk test' [] {
+    rpk up
+    rpk topic create chat
+    rpk topic create ai
+    for i in 1..100 {
+        rpk send --topic chat $i
+    }
+    rpk consume chat
+}

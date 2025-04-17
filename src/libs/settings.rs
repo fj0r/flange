@@ -5,7 +5,7 @@ use serde::Deserialize;
 #[allow(unused)]
 pub struct KafkaConsumer {
     pub broker: Vec<String>,
-    pub topic: String,
+    pub topic: Vec<String>,
     pub group: Option<String>,
 }
 

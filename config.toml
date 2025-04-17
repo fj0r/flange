@@ -1,9 +1,9 @@
 [kafka]
-enable = false
+enable = true
 
 [kafka.consumer]
 broker = ['localhost:19092']
-topic = 'chat'
+topic = ['chat']
 group = 'ws'
 
 [kafka.producer]

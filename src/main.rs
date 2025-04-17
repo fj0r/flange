@@ -1,6 +1,8 @@
 use axum::{Router, routing::get};
 use libs::message::MessageQueue;
 
+use tracing_subscriber;
+use tracing::info;
 mod libs;
 use anyhow::{Ok, Result};
 use axum::extract::State;
@@ -14,6 +16,8 @@ use libs::message::ChatMessage;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
+
     let settings = Settings::new()?;
 
     dbg!(&settings);
@@ -55,7 +59,7 @@ async fn main() -> Result<()> {
 
     let addr = "0.0.0.0:3000";
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    println!("Listening on {}", addr);
+    info!("Listening on {}", addr);
 
     axum::serve(listener, app).await?;
     Ok(())
