@@ -12,6 +12,7 @@ use libs::channel::handle_socket;
 use libs::kafka::KafkaManager;
 use libs::settings::Settings;
 use libs::shared::{StateChat, SharedState};
+use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,7 +22,7 @@ async fn main() -> Result<()> {
 
     dbg!(&settings);
 
-    let shared = SharedState::new();
+    let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
     let mq = if settings.kafka.enable {
         let mut mq: KafkaManager<ChatMessage, Envelope> = KafkaManager::new(
@@ -30,24 +31,21 @@ async fn main() -> Result<()> {
         );
         mq.run().await;
         let mqrx = mq.get_rx();
+        let shared = shared.clone();
         tokio::spawn(async move {
             if let Some(rx) = mqrx {
                 let mut rx = rx.lock().await;
                 while let Some(x) = rx.recv().await  {
-                    dbg!(x);
-                    /*
                     if !x.receiver.is_empty() {
                         let s = shared.read().await;
                         for r in x.receiver {
                             if s.sender.contains_key(&r) {
                                 if let Some(s) = s.sender.get(&r) {
-                                    //s.send(x.content);
+                                    let _ = s.send(x.message.clone());
                                 }
                             }
                         }
                     }
-                    dbg!(&x);
-                    */
                 }
             }
         });

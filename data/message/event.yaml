@@ -1,5 +1,5 @@
 receiver: []
-sender: test
+sender: unknown
 content:
     action: data
     event: test-data
