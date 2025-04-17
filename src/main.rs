@@ -1,8 +1,8 @@
 use axum::{Router, routing::get};
 use libs::message::MessageQueue;
 
-use tracing_subscriber;
 use tracing::info;
+use tracing_subscriber;
 mod libs;
 use anyhow::{Ok, Result};
 use axum::extract::State;
@@ -10,9 +10,9 @@ use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
 use libs::channel::handle_socket;
 use libs::kafka::KafkaManager;
+use libs::message::ChatMessage;
 use libs::settings::Settings;
 use libs::shared::SharedState;
-use libs::message::ChatMessage;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -33,8 +33,8 @@ async fn main() -> Result<()> {
         let mqrx = mq.get_rx();
         tokio::spawn(async move {
             if let Some(rx) = mqrx {
-                let rx = rx.lock().expect("rx lock");
-                while let x = rx.recv()  {
+                let mut rx = rx.lock().await;
+                while let Some(x) = rx.recv().await  {
                     dbg!(&x);
                 }
             }

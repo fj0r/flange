@@ -1,8 +1,7 @@
 use axum::extract::ws::WebSocket;
 //use axum::extract::State;
 use futures::{sink::SinkExt, stream::StreamExt};
-use std::sync::{Arc, mpsc};
-
+use tokio::sync::mpsc::UnboundedSender;
 use super::message::ChatMessage;
 use super::shared::SharedState;
 
@@ -19,7 +18,7 @@ use super::shared::SharedState;
 pub async fn handle_socket(
     socket: WebSocket,
     state: SharedState,
-    mqtx: Option<mpsc::Sender<ChatMessage>>,
+    mqtx: Option<UnboundedSender<ChatMessage>>,
 ) {
     let (mut sender, mut receiver) = socket.split();
 

@@ -11,7 +11,8 @@ use rdkafka::topic_partition_list::TopicPartitionList;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::Arc;
+use tokio::sync::{mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver}, Mutex};
 use std::time::Duration;
 use tokio::task::spawn;
 use tracing::{info, warn};
@@ -21,8 +22,8 @@ pub struct KafkaManager<T>
 where
     T: Send + Serialize + DeserializeOwned,
 {
-    rx: Option<Arc<Mutex<mpsc::Receiver<T>>>>,
-    tx: Option<mpsc::Sender<T>>,
+    rx: Option<Arc<Mutex<UnboundedReceiver<T>>>>,
+    tx: Option<UnboundedSender<T>>,
     consumer: KafkaConsumer,
     producer: KafkaProducer,
 }
@@ -48,7 +49,7 @@ where
     type Item = T;
 
     async fn run(&mut self) {
-        let (producer_tx, producer_rx) = mpsc::channel::<Self::Item>();
+        let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Item>();
         let producer_cfg = self.producer.clone();
 
         let producer: FutureProducer = ClientConfig::new()
@@ -59,9 +60,9 @@ where
 
         spawn(async move {
             // let topic : Vec<&str> = producer_cfg.topic.iter().map(<_>::as_ref).collect();
-            while let Ok(value) = producer_rx.recv() {
+            while let Some(value) = producer_rx.recv().await {
                 let value = serde_json::to_string(&value).expect("serde to string");
-                let delivery_status = producer
+                let _delivery_status = producer
                     .send(
                         FutureRecord::to(&producer_cfg.topic)
                             .payload(&value)
@@ -76,7 +77,7 @@ where
             }
         });
 
-        let (consumer_tx, consumer_rx) = mpsc::channel::<Self::Item>();
+        let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Item>();
         let consumer_cfg = self.consumer.clone();
 
         let context = CustomContext;
@@ -111,7 +112,13 @@ where
                                 ""
                             }
                         };
+
+                        let a = serde_json::from_str::<serde_json::Value>("{}").unwrap();
+                        let a = serde_json::to_string(&a).unwrap();
+                        dbg!(a);
+                        dbg!(payload);
                         if let Ok(value) = serde_json::from_str::<Self::Item>(payload) {
+                            info!("{value:?}");
                             if let Err(e) = consumer_tx.send(value) {
                                 eprintln!("Failed to send message from consumer: {}", e);
                             }
@@ -135,11 +142,11 @@ where
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    fn get_rx(&self) -> Option<Arc<Mutex<mpsc::Receiver<Self::Item>>>> {
+    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Item>>>> {
         self.rx.clone()
     }
 
-    fn get_tx(&self) -> Option<mpsc::Sender<Self::Item>> {
+    fn get_tx(&self) -> Option<UnboundedSender<Self::Item>> {
         self.tx.clone()
     }
 }

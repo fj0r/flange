@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::{
-    Arc,
-    Mutex,
-    mpsc::{Sender, Receiver, SendError},
-};
+use std::sync::Arc;
+use tokio::sync::{mpsc::{UnboundedSender, UnboundedReceiver}, Mutex};
 use std::fmt::Debug;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -20,8 +17,8 @@ pub trait MessageQueue {
     async fn run(&mut self);
 
     #[allow(unused)]
-    fn get_rx(&self) -> Option<Arc<Mutex<Receiver<Self::Item>>>>;
+    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Item>>>>;
 
     #[allow(unused)]
-    fn get_tx(&self) -> Option<Sender<Self::Item>>;
+    fn get_tx(&self) -> Option<UnboundedSender<Self::Item>>;
 }

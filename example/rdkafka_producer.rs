@@ -15,7 +15,26 @@ use std::time::Duration;
 use rdkafka::config::ClientConfig;
 use rdkafka::message::{Header, OwnedHeaders};
 use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::util::get_rdkafka_version;
+use serde_json::{from_str, to_string, Value};
+
+
+const JV: String = r#"
+{
+  "sender": "test",
+  "content": {
+    "action": "data",
+    "event": "test-data",
+    "data": {
+      "kind": "Text",
+      "data": {
+        "upload": true,
+        "event": "user-message"
+      },
+      "value": "Guide"
+    }
+  }
+}
+"#;
 
 async fn produce(brokers: &str, topic_name: &str) {
     let producer: &FutureProducer = &ClientConfig::new()
@@ -24,9 +43,11 @@ async fn produce(brokers: &str, topic_name: &str) {
         .create()
         .expect("Producer creation error");
 
+    let jv = from_str::<Value>(JV);
+    let jv = to_string(&jv);
     // This loop is non blocking: all messages will be sent one after the other, without waiting
     // for the results.
-    let futures = (0..500)
+    let futures = (0..5)
         .map(|i| async move {
             // The send operation on the topic returns a future, which will be
             // completed once the result or failure from Kafka is received.
