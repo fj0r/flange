@@ -1,4 +1,4 @@
-receiver: ["fasd"]
+receiver: []
 sender: test
 content:
     action: data

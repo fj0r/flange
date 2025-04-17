@@ -22,21 +22,16 @@ export def send [
     --patch(-p): record = {}
 ] {
     let c = open $CONFIG
-    let d = open ([$WORKDIR data message $file] | path join) | get -i content
+    let d = open ([$WORKDIR data message $file] | path join)
     let host = $"http://($c.server.host)/admin/message"
-    let data = {
-        receiver: $receiver,
-        sender: $sender,
-        content: ($d | merge deep $patch)
-    }
+    let data = $d | merge deep $patch
+    print $"(ansi grey)($data | to yaml)(ansi reset)"
     http post --content-type application/json $host $data
 }
 
 export def 'dev serve' [] {
     $env.RUST_BACKTRACE = 1
     #$env.APP_KAFKA_ENABLE = 1
-    $env.APP_KAFKA_CONSUMER_TOPIC = 'chat'
-    $env.APP_KAFKA_PRODUCER_TOPIC = 'ai'
     cargo run
 }
 

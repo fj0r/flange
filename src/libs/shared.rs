@@ -4,12 +4,12 @@ use std::sync::Arc;
 use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
 
 #[derive(Debug, Clone)]
-pub struct Shared {
-    pub sender: HashMap<String, UnboundedSender<ChatMessage>>,
+pub struct Shared<T> {
+    pub sender: HashMap<String, T>,
     pub count: u128,
 }
 
-impl Shared {
+impl<T> Shared<T> {
     pub fn new() -> Self {
         Shared {
             sender: HashMap::new(),
@@ -18,19 +18,23 @@ impl Shared {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct SharedState (Arc<Mutex<Shared>>);
 
-impl SharedState {
+#[derive(Debug, Clone)]
+pub struct SharedState<T> (Arc<Mutex<Shared<T>>>);
+
+impl<T> SharedState<T> {
     pub fn new() -> Self {
-        SharedState(Arc::new(Mutex::new(Shared::new())))
+        SharedState::<T>(Arc::new(Mutex::new(Shared::new())))
     }
 
-    pub async fn read(&self) -> MutexGuard<Shared> {
+    pub async fn read(&self) -> MutexGuard<Shared<T>> {
         self.0.lock().await
     }
 
-    pub async fn write(&self) -> MutexGuard<Shared> {
+    pub async fn write(&self) -> MutexGuard<Shared<T>> {
         self.0.lock().await
     }
 }
+
+
+pub type StateChat = SharedState<UnboundedSender<ChatMessage>>;

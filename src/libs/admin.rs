@@ -4,21 +4,13 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
-use serde::Deserialize;
 
 use super::error::AppError;
-use super::{message, shared::SharedState};
-
-#[derive(Deserialize)]
-struct Envelope {
-    receiver: Vec<String>,
-    #[serde(flatten)]
-    message: message::ChatMessage,
-}
+use super::{message, shared::StateChat};
 
 async fn send(
-    State(state): State<SharedState>,
-    Json(payload): Json<Envelope>,
+    State(state): State<StateChat>,
+    Json(payload): Json<message::Envelope>,
 ) -> Result<(StatusCode, Json<Vec<String>>), AppError> {
     let mut succ: Vec<String> = Vec::new();
     let s = state.read().await;
@@ -40,12 +32,12 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-async fn list(State(state): State<SharedState>) -> axum::Json<Vec<String>> {
+async fn list(State(state): State<StateChat>) -> axum::Json<Vec<String>> {
     let s = state.read().await;
         Json(s.sender.keys().cloned().collect::<Vec<String>>())
 }
 
-pub fn admin_router() -> Router<SharedState> {
+pub fn admin_router() -> Router<StateChat> {
     Router::new()
         .route("/users", get(list))
         .route("/message", post(send))

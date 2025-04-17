@@ -1,5 +1,5 @@
 use axum::{Router, routing::get};
-use libs::message::MessageQueue;
+use libs::message::{MessageQueue, ChatMessage};
 
 use tracing::info;
 use tracing_subscriber;
@@ -10,9 +10,8 @@ use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
 use libs::channel::handle_socket;
 use libs::kafka::KafkaManager;
-use libs::message::ChatMessage;
 use libs::settings::Settings;
-use libs::shared::SharedState;
+use libs::shared::{StateChat, SharedState};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -35,7 +34,20 @@ async fn main() -> Result<()> {
             if let Some(rx) = mqrx {
                 let mut rx = rx.lock().await;
                 while let Some(x) = rx.recv().await  {
+                    dbg!(x);
+                    /*
+                    if !x.receiver.is_empty() {
+                        let s = shared.read().await;
+                        for r in x.receiver {
+                            if s.sender.contains_key(&r) {
+                                if let Some(s) = s.sender.get(&r) {
+                                    //s.send(x.content);
+                                }
+                            }
+                        }
+                    }
                     dbg!(&x);
+                    */
                 }
             }
         });
@@ -49,7 +61,7 @@ async fn main() -> Result<()> {
         .route(
             "/channel",
             get(
-                |ws: WebSocketUpgrade, State(state): State<SharedState>| async move {
+                |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
                     ws.on_upgrade(|socket| handle_socket(socket, state, mqtx))
                 },
             ),

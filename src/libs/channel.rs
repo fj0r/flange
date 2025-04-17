@@ -1,9 +1,11 @@
+use std::fmt::Debug;
 use axum::extract::ws::WebSocket;
+use serde::{Serialize, Deserialize};
 //use axum::extract::State;
+use super::shared::SharedState;
 use futures::{sink::SinkExt, stream::StreamExt};
 use tokio::sync::mpsc::UnboundedSender;
-use super::message::ChatMessage;
-use super::shared::SharedState;
+use serde_json::Value;
 
 // pub async fn ws_handler(
 //     mq: Option<impl MessageQueue + Send>,
@@ -15,14 +17,16 @@ use super::shared::SharedState;
 //     )
 // }
 
-pub async fn handle_socket(
+pub async fn handle_socket<T>(
     socket: WebSocket,
-    state: SharedState,
-    mqtx: Option<UnboundedSender<ChatMessage>>,
-) {
+    state: SharedState<UnboundedSender<T>>,
+    mqtx: Option<UnboundedSender<T>>,
+) where
+    T: for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static
+{
     let (mut sender, mut receiver) = socket.split();
 
-    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<ChatMessage>();
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
     let username: String;
 
     {
@@ -48,11 +52,7 @@ pub async fn handle_socket(
             // text protocol of ws
             if let Ok(text) = msg.to_text() {
                 if let Ok(value) = serde_json::to_value(text) {
-                    let chat_msg = ChatMessage {
-                        sender: un.clone(),
-                        receiver: vec![],
-                        content: value,
-                    };
+                    let chat_msg: T = (un.clone(), value).into();
 
                     // send to MQ
                     if let Some(ref m) = mqtx {

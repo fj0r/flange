@@ -4,11 +4,26 @@ use std::sync::Arc;
 use tokio::sync::{mpsc::{UnboundedSender, UnboundedReceiver}, Mutex};
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+pub struct Envelope {
+    pub receiver: Vec<String>,
+    #[serde(flatten)]
+    pub message: ChatMessage,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct ChatMessage {
     pub sender: String,
-    pub receiver: Vec<String>,
     pub content: Value,
+}
+
+impl From<(String, Value)> for ChatMessage {
+    fn from(value: (String, Value)) -> Self {
+        ChatMessage {
+            sender: value.0,
+            content: value.1,
+        }
+    }
 }
 
 pub trait MessageQueue {
@@ -23,3 +38,4 @@ pub trait MessageQueue {
     #[allow(unused)]
     fn get_tx(&self) -> Option<UnboundedSender<Self::Item>>;
 }
+
