@@ -59,7 +59,7 @@ pub async fn handle_socket<T>(
                         let _ = m.send(chat_msg.clone());
                     }
 
-                    println!("[ws] {:?}", &chat_msg);
+                    tracing::debug!("[ws] {:?}", &chat_msg);
                 }
             }
         }
@@ -85,7 +85,7 @@ pub async fn handle_socket<T>(
         _ = &mut send_task => send_task.abort(),
     };
 
-    println!("Connection closed for {}", &username);
+    tracing::info!("Connection closed for {}", &username);
     let mut s = state.write().await;
     s.sender.remove(&username);
 }

@@ -18,7 +18,7 @@ use tokio::sync::{
     mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
 };
 use tokio::task::spawn;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 #[derive(Clone)]
 pub struct KafkaManager<S, R>
@@ -122,7 +122,7 @@ where
 
                         if let Ok(value) = serde_json::from_str::<Self::Receiver>(payload) {
                             if let Err(e) = consumer_tx.send(value) {
-                                eprintln!("Failed to send message from consumer: {}", e);
+                                error!("Failed to send message from consumer: {}", e);
                             }
                         }
                         /*
