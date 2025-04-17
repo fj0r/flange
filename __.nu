@@ -1,4 +1,5 @@
 const CONFIG = path self __.toml
+const WORKDIR = path self .
 
 export def receiver [] {
     let c = open $CONFIG
@@ -9,17 +10,24 @@ def cmpl-act [] {
     [Message Layout test]
 }
 
+def cmpl-data [] {
+    cd ([$WORKDIR data message] | path join)
+    ls | get name
+}
+
 export def send [
-    message
+    file:string@cmpl-data
     --receiver(-r): list<string@receiver> = []
     --sender(-s): string = 'unknown'
+    --patch(-p): record = {}
 ] {
     let c = open $CONFIG
+    let d = open ([$WORKDIR data message $file] | path join) | get -i content
     let host = $"http://($c.server.host)/admin/message"
     let data = {
         receiver: $receiver,
         sender: $sender,
-        content: $message
+        content: ($d | merge deep $patch)
     }
     http post --content-type application/json $host $data
 }
@@ -47,9 +55,14 @@ export def 'dev test' [] {
 }
 
 
-export def 'rpk send' [data -p:int=0 --topic(-t):string@"rpk topic list"] {
+export def 'rpk send' [
+    data
+    --partition:int=0
+    --topic(-t):string@"rpk topic list"
+    --patch: record = {}
+] {
     let c = open $CONFIG
-    let data = { records: ($data | wrap value | insert partition $p) } | to json -r
+    let data = { records: ($data | merge deep $patch | wrap value | insert partition $partition) } | to json -r
     http post -H [
         Content-Type application/vnd.kafka.json.v2+json
     ] $"http://($c.redpanda.admin)/topics/($topic)" $data
@@ -149,8 +162,9 @@ export def 'rpk test' [] {
     rpk up
     rpk topic create chat
     rpk topic create ai
-    for i in 1..100 {
-        rpk send --topic chat $i
-    }
+    rpk send --topic chat (open sandbox/event.yaml)
+    # for i in 1..100 {
+    #     rpk send --topic chat $i
+    # }
     rpk consume chat
 }

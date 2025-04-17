@@ -50,6 +50,7 @@ pub async fn handle_socket(
                 if let Ok(value) = serde_json::to_value(text) {
                     let chat_msg = ChatMessage {
                         sender: un.clone(),
+                        receiver: vec![],
                         content: value,
                     };
 

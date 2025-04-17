@@ -7,6 +7,7 @@ use std::fmt::Debug;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChatMessage {
     pub sender: String,
+    pub receiver: Vec<String>,
     pub content: Value,
 }
 
