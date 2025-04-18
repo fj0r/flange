@@ -11,7 +11,7 @@ use libs::admin::admin_router;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::Settings;
 use libs::shared::{SharedState, StateChat};
-use libs::websocket::handle_socket;
+use libs::websocket::{handle_socket, notify};
 use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
@@ -24,43 +24,27 @@ async fn main() -> Result<()> {
 
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
-    let mq = if settings.queue.enable {
-        let mut push: KafkaManagerPush<Envelope> =
+    let event_mq = if settings.queue.enable {
+        let mut push_mq: KafkaManagerPush<Envelope> =
             KafkaManagerPush::new(settings.queue.push.clone());
-        push.run().await;
-        let mqrx = push.get_rx();
+        push_mq.run().await;
         let shared = shared.clone();
-        tokio::spawn(async move {
-            if let Some(rx) = mqrx {
-                let mut rx = rx.lock().await;
-                while let Some(x) = rx.recv().await {
-                    if !x.receiver.is_empty() {
-                        let s = shared.read().await;
-                        for r in x.receiver {
-                            if s.sender.contains_key(&r) {
-                                if let Some(s) = s.sender.get(&r) {
-                                    let _ = s.send(x.message.clone());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        let mut event: KafkaManagerEvent<ChatMessage> =
+        notify(&push_mq, &shared).await;
+
+        let mut event_mq: KafkaManagerEvent<ChatMessage> =
             KafkaManagerEvent::new(settings.queue.event.clone());
-        event.run().await;
-        Some(event)
+        event_mq.run().await;
+        Some(event_mq)
     } else {
         None
     };
 
-    let mqtx = mq.as_ref().and_then(|m| m.get_tx());
     let app = Router::new()
         .route(
             "/channel",
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
+                    let mqtx = event_mq.as_ref().and_then(|m| m.get_tx());
                     ws.on_upgrade(|socket| handle_socket(socket, state, mqtx))
                 },
             ),

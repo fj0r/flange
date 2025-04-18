@@ -1,11 +1,9 @@
-use std::fmt::Debug;
 use axum::extract::ws::WebSocket;
-use serde::{Serialize, Deserialize};
-//use axum::extract::State;
-use super::shared::SharedState;
 use futures::{sink::SinkExt, stream::StreamExt};
-use tokio::sync::mpsc::UnboundedSender;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::fmt::Debug;
+use tokio::sync::mpsc::UnboundedSender;
 
 // pub async fn ws_handler(
 //     mq: Option<impl MessageQueue + Send>,
@@ -22,7 +20,7 @@ pub async fn handle_socket<T>(
     state: SharedState<UnboundedSender<T>>,
     mqtx: Option<UnboundedSender<T>>,
 ) where
-    T: for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static
+    T: for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
 {
     let (mut sender, mut receiver) = socket.split();
 
@@ -94,4 +92,33 @@ pub async fn handle_socket<T>(
 trait Client {
     fn on_init() {}
     fn on_message() {}
+}
+
+use super::kafka::KafkaManagerPush;
+use super::message::{ChatMessage, Envelope, MessageQueuePush};
+use super::shared::SharedState;
+
+pub async fn notify(
+    push_mq: &KafkaManagerPush<Envelope>,
+    shared: &SharedState<UnboundedSender<ChatMessage>>,
+) {
+    let mqrx = push_mq.get_rx();
+    let shared = shared.clone();
+    tokio::spawn(async move {
+        if let Some(rx) = mqrx {
+            let mut rx = rx.lock().await;
+            while let Some(x) = rx.recv().await {
+                if !x.receiver.is_empty() {
+                    let s = shared.read().await;
+                    for r in x.receiver {
+                        if s.sender.contains_key(&r) {
+                            if let Some(s) = s.sender.get(&r) {
+                                let _ = s.send(x.message.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
