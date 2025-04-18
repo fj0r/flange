@@ -157,7 +157,7 @@ export def 'rpk test' [] {
     rpk up
     rpk topic create chat
     rpk topic create ai
-    rpk send --topic chat (open sandbox/event.yaml)
+    rpk send --topic chat (open data/message/event.yaml)
     # for i in 1..100 {
     #     rpk send --topic chat $i
     # }

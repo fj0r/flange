@@ -1,5 +1,5 @@
 pub mod admin;
-pub mod channel;
+pub mod websocket;
 pub mod error;
 pub mod kafka;
 pub mod message;

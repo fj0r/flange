@@ -8,7 +8,7 @@ use anyhow::{Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
-use libs::channel::handle_socket;
+use libs::websocket::handle_socket;
 use libs::kafka::KafkaManager;
 use libs::settings::Settings;
 use libs::shared::{StateChat, SharedState};
