@@ -1,4 +1,4 @@
-use super::message::MessageQueue;
+use super::message::{MessageQueueEvent, MessageQueuePush};
 use super::settings::{QueuePush, QueueEvent};
 use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
@@ -20,44 +20,38 @@ use tokio::sync::{
 use tokio::task::spawn;
 use tracing::{info, warn, error};
 
+
 #[derive(Clone)]
-pub struct KafkaManager<S, R>
+pub struct KafkaManagerEvent<T>
 where
-    R: Send + Serialize + DeserializeOwned,
-    S: Send + Serialize + DeserializeOwned,
+    T: Send + Serialize + DeserializeOwned,
 {
-    rx: Option<Arc<Mutex<UnboundedReceiver<R>>>>,
-    tx: Option<UnboundedSender<S>>,
-    push: QueuePush,
-    event: QueueEvent,
+    tx: Option<UnboundedSender<T>>,
+    producer: QueueEvent,
 }
 
-impl<S, R> KafkaManager<S, R>
+impl<T> KafkaManagerEvent<T>
 where
-    S: Send + Serialize + DeserializeOwned + 'static,
-    R: Send + Serialize + DeserializeOwned + 'static,
+    T: Send + Serialize + DeserializeOwned + 'static
 {
-    pub fn new(consumer: QueuePush, producer: QueueEvent) -> Self {
+    pub fn new(producer: QueueEvent) -> Self {
         Self {
-            rx: None,
             tx: None,
-            push: consumer,
-            event: producer,
+            producer,
         }
     }
 }
 
-impl<S, R> MessageQueue for KafkaManager<S, R>
+
+impl<T> MessageQueueEvent for KafkaManagerEvent<T>
 where
-    S: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
-    R: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
+    T: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
 {
-    type Sender = S;
-    type Receiver = R;
+    type Item = T;
 
     async fn run(&mut self) {
-        let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Sender>();
-        let producer_cfg = self.event.clone();
+        let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Item>();
+        let producer_cfg = self.producer.clone();
 
         let producer: FutureProducer = ClientConfig::new()
             .set("bootstrap.servers", producer_cfg.broker[0].clone())
@@ -84,8 +78,46 @@ where
             }
         });
 
-        let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Receiver>();
-        let consumer_cfg = self.push.clone();
+
+        self.tx = Some(producer_tx);
+    }
+
+    fn get_tx(&self) -> Option<UnboundedSender<Self::Item>> {
+        self.tx.clone()
+    }
+}
+
+
+#[derive(Clone)]
+pub struct KafkaManagerPush<T>
+where
+    T: Send + Serialize + DeserializeOwned,
+{
+    rx: Option<Arc<Mutex<UnboundedReceiver<T>>>>,
+    consumer: QueuePush,
+}
+
+impl<T> KafkaManagerPush<T>
+where
+    T: Send + Serialize + DeserializeOwned + 'static,
+{
+    pub fn new(consumer: QueuePush) -> Self {
+        Self {
+            rx: None,
+            consumer,
+        }
+    }
+}
+
+impl<T> MessageQueuePush for KafkaManagerPush<T>
+where
+    T: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
+{
+    type Item = T;
+
+    async fn run(&mut self) {
+        let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Item>();
+        let consumer_cfg = self.consumer.clone();
 
         let context = CustomContext;
 
@@ -120,7 +152,7 @@ where
                             }
                         };
 
-                        if let Ok(value) = serde_json::from_str::<Self::Receiver>(payload) {
+                        if let Ok(value) = serde_json::from_str::<Self::Item>(payload) {
                             if let Err(e) = consumer_tx.send(value) {
                                 error!("Failed to send message from consumer: {}", e);
                             }
@@ -139,19 +171,14 @@ where
                 }
             }
         });
-
-        self.tx = Some(producer_tx);
         self.rx = Some(Arc::new(Mutex::new(consumer_rx)));
     }
 
-    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Receiver>>>> {
+    fn get_rx(&self) -> Option<Arc<Mutex<UnboundedReceiver<Self::Item>>>> {
         self.rx.clone()
     }
-
-    fn get_tx(&self) -> Option<UnboundedSender<Self::Sender>> {
-        self.tx.clone()
-    }
 }
+
 
 struct CustomContext;
 

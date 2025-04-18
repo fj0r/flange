@@ -1,5 +1,5 @@
 ### TODO:
-- [ ] MessageQueue separate into event and push.
+- [x] MessageQueue separate into event and push.
   - The event queue is used for business logic.
   - The push queue is used to send messages to users
       - It can be non-persistent (e.g., Redis stream)

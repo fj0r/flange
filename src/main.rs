@@ -1,5 +1,5 @@
 use axum::{Router, routing::get};
-use libs::message::{ChatMessage, Envelope, MessageQueue};
+use libs::message::{ChatMessage, Envelope, MessageQueueEvent, MessageQueuePush};
 
 use tracing::info;
 use tracing_subscriber;
@@ -8,10 +8,10 @@ use anyhow::{Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
-use libs::websocket::handle_socket;
-use libs::kafka::KafkaManager;
+use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::Settings;
-use libs::shared::{StateChat, SharedState};
+use libs::shared::{SharedState, StateChat};
+use libs::websocket::handle_socket;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
@@ -25,17 +25,15 @@ async fn main() -> Result<()> {
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
     let mq = if settings.queue.enable {
-        let mut mq: KafkaManager<ChatMessage, Envelope> = KafkaManager::new(
-            settings.queue.push.clone(),
-            settings.queue.event.clone(),
-        );
-        mq.run().await;
-        let mqrx = mq.get_rx();
+        let mut push: KafkaManagerPush<Envelope> =
+            KafkaManagerPush::new(settings.queue.push.clone());
+        push.run().await;
+        let mqrx = push.get_rx();
         let shared = shared.clone();
         tokio::spawn(async move {
             if let Some(rx) = mqrx {
                 let mut rx = rx.lock().await;
-                while let Some(x) = rx.recv().await  {
+                while let Some(x) = rx.recv().await {
                     if !x.receiver.is_empty() {
                         let s = shared.read().await;
                         for r in x.receiver {
@@ -49,7 +47,10 @@ async fn main() -> Result<()> {
                 }
             }
         });
-        Some(mq)
+        let mut event: KafkaManagerEvent<ChatMessage> =
+            KafkaManagerEvent::new(settings.queue.event.clone());
+        event.run().await;
+        Some(event)
     } else {
         None
     };
