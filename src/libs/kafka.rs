@@ -1,5 +1,5 @@
 use super::message::MessageQueue;
-use super::settings::{KafkaConsumer, KafkaProducer};
+use super::settings::{QueuePush, QueueEvent};
 use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
 use rdkafka::consumer::stream_consumer::StreamConsumer;
@@ -28,8 +28,8 @@ where
 {
     rx: Option<Arc<Mutex<UnboundedReceiver<R>>>>,
     tx: Option<UnboundedSender<S>>,
-    consumer: KafkaConsumer,
-    producer: KafkaProducer,
+    push: QueuePush,
+    event: QueueEvent,
 }
 
 impl<S, R> KafkaManager<S, R>
@@ -37,12 +37,12 @@ where
     S: Send + Serialize + DeserializeOwned + 'static,
     R: Send + Serialize + DeserializeOwned + 'static,
 {
-    pub fn new(consumer: KafkaConsumer, producer: KafkaProducer) -> Self {
+    pub fn new(consumer: QueuePush, producer: QueueEvent) -> Self {
         Self {
             rx: None,
             tx: None,
-            consumer,
-            producer,
+            push: consumer,
+            event: producer,
         }
     }
 }
@@ -57,7 +57,7 @@ where
 
     async fn run(&mut self) {
         let (producer_tx, mut producer_rx) = unbounded_channel::<Self::Sender>();
-        let producer_cfg = self.producer.clone();
+        let producer_cfg = self.event.clone();
 
         let producer: FutureProducer = ClientConfig::new()
             .set("bootstrap.servers", producer_cfg.broker[0].clone())
@@ -85,7 +85,7 @@ where
         });
 
         let (consumer_tx, consumer_rx) = unbounded_channel::<Self::Receiver>();
-        let consumer_cfg = self.consumer.clone();
+        let consumer_cfg = self.push.clone();
 
         let context = CustomContext;
 

@@ -155,11 +155,11 @@ export def 'rpk up' [
 
 export def 'rpk test' [] {
     rpk up
-    rpk topic create chat
-    rpk topic create ai
-    rpk send --topic chat (open data/message/event.yaml)
+    rpk topic create event
+    rpk topic create push
+    rpk send --topic event (open data/message/event.yaml)
     # for i in 1..100 {
-    #     rpk send --topic chat $i
+    #     rpk send --topic event $i
     # }
-    rpk consume chat
+    rpk consume event
 }

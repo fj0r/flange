@@ -24,10 +24,10 @@ async fn main() -> Result<()> {
 
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
-    let mq = if settings.kafka.enable {
+    let mq = if settings.queue.enable {
         let mut mq: KafkaManager<ChatMessage, Envelope> = KafkaManager::new(
-            settings.kafka.consumer.clone(),
-            settings.kafka.producer.clone(),
+            settings.queue.push.clone(),
+            settings.queue.event.clone(),
         );
         mq.run().await;
         let mqrx = mq.get_rx();

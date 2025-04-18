@@ -1,3 +1,11 @@
+### TODO:
+- [ ] MessageQueue separate into event and push.
+  - The event queue is used for business logic.
+  - The push queue is used to send messages to users
+      - It can be non-persistent (e.g., Redis stream)
+      - Streamed fragments of AI responses
+          - No need for long-term storage (a complete copy should exist in the event queue)
+          - Not convenient for the recipient to extract the content
 - [ ] webhook
     - receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
     - event map

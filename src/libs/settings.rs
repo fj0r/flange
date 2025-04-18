@@ -3,7 +3,9 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
-pub struct KafkaConsumer {
+pub struct QueuePush {
+    #[serde(alias = "type")]
+    pub kind: String,
     pub broker: Vec<String>,
     pub topic: Vec<String>,
     pub group: Option<String>,
@@ -11,17 +13,19 @@ pub struct KafkaConsumer {
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
-pub struct KafkaProducer {
+pub struct QueueEvent {
+    #[serde(rename = "type")]
+    pub kind: String,
     pub broker: Vec<String>,
     pub topic: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct Kafka {
+pub struct Queue {
     pub enable: bool,
-    pub consumer: KafkaConsumer,
-    pub producer: KafkaProducer,
+    pub event: QueueEvent,
+    pub push: QueuePush,
 }
 
 #[derive(Debug, Deserialize)]
@@ -36,7 +40,7 @@ pub struct Webhook {
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
-    pub kafka: Kafka,
+    pub queue: Queue,
     pub webhooks: Vec<Webhook>,
 }
 

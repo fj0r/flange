@@ -1,14 +1,16 @@
-[kafka]
+[queue]
 enable = true
 
-[kafka.consumer]
+[queue.event]
+type = 'kafka'
 broker = ['localhost:19092']
-topic = ['chat']
-group = 'ws'
+topic = 'event'
 
-[kafka.producer]
+[queue.push]
+type = 'kafka'
 broker = ['localhost:19092']
-topic = 'ai'
+topic = ['push']
+group = 'ws'
 
 [[webhooks]]
 event = 'history'
