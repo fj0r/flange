@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct QueuePush {
-    #[serde(alias = "type")]
+    #[serde(rename = "type")]
     pub kind: String,
     pub broker: Vec<String>,
     pub topic: Vec<String>,

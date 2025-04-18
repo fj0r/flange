@@ -24,7 +24,7 @@ static JV: &str = r#"
     "action": "data",
     "event": "test-data",
     "data": {
-      "kind": "Text",
+      "type": "Text",
       "data": {
         "upload": true,
         "event": "user-message"
