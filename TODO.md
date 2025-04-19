@@ -10,4 +10,5 @@
     - receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
     - event map
     - history srv
+    - hot reload config
 - [ ] channel/chatroom
