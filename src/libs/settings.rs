@@ -1,4 +1,4 @@
-use config::{Config, ConfigError, Environment, File};
+use figment::{providers::{Env, Format, Toml}, Figment, Result};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -45,12 +45,10 @@ pub(crate) struct Settings {
 }
 
 impl Settings {
-    pub(crate) fn new() -> Result<Self, ConfigError> {
-        let s = Config::builder()
-            .add_source(File::with_name("config"))
-            .add_source(Environment::with_prefix("app").separator("_"))
-            .build()?;
-
-        s.try_deserialize()
+    pub(crate) fn new() -> Result<Self> {
+        Figment::new()
+            .merge(Toml::file("config.toml"))
+            .merge(Env::prefixed("app_").split("_"))
+            .extract()
     }
 }
