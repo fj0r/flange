@@ -9,7 +9,7 @@ use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
-use libs::settings::Settings;
+use libs::settings::{Settings, Config};
 use libs::shared::{SharedState, StateChat};
 use libs::websocket::{handle_socket, notify};
 use tokio::sync::mpsc::UnboundedSender;
@@ -18,9 +18,13 @@ use tokio::sync::mpsc::UnboundedSender;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    let mut config = Config::new()?;
+    let _ = config.listen().await.unwrap();
+    dbg!(&config.data);
+
     let settings = Settings::new()?;
 
-    dbg!(&settings);
+    //dbg!(&settings);
 
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 

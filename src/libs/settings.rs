@@ -1,5 +1,12 @@
-use figment::{providers::{Env, Format, Toml}, Figment, Result};
+use figment::{
+    Figment, Result,
+    providers::{Env, Format, Toml},
+};
+use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watcher};
 use serde::Deserialize;
+use std::sync::{Arc, mpsc::channel};
+use std::path::Path;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
@@ -50,5 +57,38 @@ impl Settings {
             .merge(Toml::file("config.toml"))
             .merge(Env::prefixed("app_").split("_"))
             .extract()
+    }
+}
+
+pub struct Config {
+    pub data: Arc<Mutex<Settings>>,
+}
+
+impl Config {
+    pub fn new() -> Result<Self> {
+        let x = Settings::new()?;
+        Ok(Self {
+            data: Arc::new(Mutex::new(x)),
+        })
+    }
+
+    pub async fn listen(&mut self) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let (tx, rx) = channel::<ResultN<Event>>();
+        let mut watcher = recommended_watcher(tx).unwrap();
+        watcher.watch(Path::new("./config.toml"), RecursiveMode::Recursive)?;
+        let d = self.data.clone();
+        tokio::task::spawn_blocking(|| async move {
+            for res in rx {
+                if let Ok(ev) = res {
+                    if ev.kind.is_modify() {
+                        let n = Settings::new().unwrap();
+                        dbg!("config update: {:?}", &n);
+                        let mut x = d.lock().await;
+                        *x = n;
+                    }
+                }
+            }
+        });
+        Ok(())
     }
 }
