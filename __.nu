@@ -1,8 +1,9 @@
-const CONFIG = path self __.toml
 const WORKDIR = path self .
+const CFG = path self __.toml
+const CONFIG = path self config.toml
 
 export def receiver [] {
-    let c = open $CONFIG
+    let c = open $CFG
     http get $"http://($c.server.host)/admin/users"
 }
 
@@ -21,7 +22,7 @@ export def send [
     --sender(-s): string = 'unknown'
     --patch(-p): record = {}
 ] {
-    let c = open $CONFIG
+    let c = open $CFG
     let d = open ([$WORKDIR data message $file] | path join)
     let host = $"http://($c.server.host)/admin/message"
     let data = $d | merge deep $patch
@@ -36,7 +37,7 @@ export def 'dev serve' [] {
 }
 
 export def 'dev client' [] {
-    let c = open $CONFIG
+    let c = open $CFG
     websocat $"ws://($c.server.host)/channel"
 }
 
@@ -56,7 +57,7 @@ export def 'rpk send' [
     --topic(-t):string@"rpk topic list"
     --patch: record = {}
 ] {
-    let c = open $CONFIG
+    let c = open $CFG
     let data = { records: ($data | merge deep $patch | wrap value | insert partition $partition) } | to json -r
     http post -H [
         Content-Type application/vnd.kafka.json.v2+json
@@ -64,7 +65,7 @@ export def 'rpk send' [
 }
 
 export def 'rpk subscribe' [topic:string@"rpk topic list"] {
-    let c = open $CONFIG
+    let c = open $CFG
     let data = { topics: [$topic] } | to json -r
     curl -sL $"http://($c.redpanda.admin)/topics/($topic)/partitions/0/records?offset=0" -H "Content-Type: application/vnd.kafka.json.v2+json" --data $data
 }
@@ -88,7 +89,7 @@ export def 'rpk group delete' [group:string@"rpk group list"] {
 }
 
 export def 'rpk topic list' [] {
-    let c = open $CONFIG
+    let c = open $CFG
     http get $"http://($c.redpanda.admin)/topics" | from json
 }
 
@@ -155,8 +156,9 @@ export def 'rpk up' [
 
 export def 'rpk test' [] {
     rpk up
-    rpk topic create event
-    rpk topic create push
+    let s = open $CONFIG
+    rpk topic create $s.queue.event.topic
+    rpk topic create $s.queue.push.topic.0
     rpk send --topic event (open data/message/event.yaml)
     # for i in 1..100 {
     #     rpk send --topic event $i
