@@ -4,8 +4,8 @@ use figment::{
 };
 use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watcher};
 use serde::Deserialize;
-use std::sync::{Arc, mpsc::channel};
 use std::path::Path;
+use std::sync::{Arc, mpsc::channel};
 use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -74,20 +74,19 @@ impl Config {
 
     pub async fn listen(&mut self) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let (tx, rx) = channel::<ResultN<Event>>();
-        let mut watcher = recommended_watcher(tx).unwrap();
+        let mut watcher = recommended_watcher(tx)?;
         watcher.watch(Path::new("./config.toml"), RecursiveMode::Recursive)?;
         let d = self.data.clone();
         tokio::task::spawn_blocking(|| async move {
             for res in rx {
-                if let Ok(ev) = res {
-                    if ev.kind.is_modify() {
-                        let n = Settings::new().unwrap();
-                        dbg!("config update: {:?}", &n);
-                        let mut x = d.lock().await;
-                        *x = n;
-                    }
+                if res?.kind.is_modify() {
+                    let n = Settings::new()?;
+                    dbg!("config update: {:?}", &n);
+                    let mut x = d.lock().await;
+                    *x = n;
                 }
             }
+            Ok::<(), Box<dyn std::error::Error>>(())
         });
         Ok(())
     }

@@ -161,5 +161,5 @@ export def 'rpk test' [] {
     # for i in 1..100 {
     #     rpk send --topic event $i
     # }
-    rpk consume event
+    # rpk consume event
 }

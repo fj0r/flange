@@ -1,5 +1,5 @@
 [queue]
-enable = false
+enable = true
 
 [queue.event]
 type = 'kafka'

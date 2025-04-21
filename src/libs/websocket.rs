@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
@@ -46,36 +47,35 @@ pub async fn handle_socket<T>(
         tx.send(msg).ok();
         */
 
-        while let Some(Ok(msg)) = receiver.next().await {
+        while let Some(std::result::Result::Ok(msg)) = receiver.next().await {
             // text protocol of ws
-            if let Ok(text) = msg.to_text() {
-                if let Ok(value) = serde_json::to_value(text) {
-                    let chat_msg: T = (un.clone(), value).into();
+            let text = msg.to_text()?;
+            let value = serde_json::to_value(text)?;
+            let chat_msg: T = (un.clone(), value).into();
 
-                    // send to MQ
-                    if let Some(ref m) = mqtx {
-                        let _ = m.send(chat_msg.clone());
-                    }
-
-                    tracing::debug!("[ws] {:?}", &chat_msg);
-                }
+            // send to MQ
+            if let Some(ref m) = mqtx {
+                let _ = m.send(chat_msg.clone());
             }
+
+            tracing::debug!("[ws] {:?}", &chat_msg);
         }
+        Ok(())
     });
 
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
-            if let Ok(text) = serde_json::to_string(&msg) {
-                // to ws client
-                if sender
-                    .send(axum::extract::ws::Message::Text(text.into()))
-                    .await
-                    .is_err()
-                {
-                    break;
-                }
+            let text = serde_json::to_string(&msg)?;
+            // to ws client
+            if sender
+                .send(axum::extract::ws::Message::Text(text.into()))
+                .await
+                .is_err()
+            {
+                break;
             }
         }
+        Ok(())
     });
 
     tokio::select! {
@@ -105,20 +105,20 @@ pub async fn notify(
     let mqrx = push_mq.get_rx();
     let shared = shared.clone();
     tokio::spawn(async move {
-        if let Some(rx) = mqrx {
-            let mut rx = rx.lock().await;
-            while let Some(x) = rx.recv().await {
-                if !x.receiver.is_empty() {
-                    let s = shared.read().await;
-                    for r in x.receiver {
-                        if s.sender.contains_key(&r) {
-                            if let Some(s) = s.sender.get(&r) {
-                                let _ = s.send(x.message.clone());
-                            }
-                        }
+        let rx = mqrx?;
+        let mut rx = rx.lock().await;
+
+        while let Some(x) = rx.recv().await {
+            if !x.receiver.is_empty() {
+                let s = shared.read().await;
+                for r in x.receiver {
+                    if s.sender.contains_key(&r) {
+                        let s = s.sender.get(&r)?;
+                        let _ = s.send(x.message.clone());
                     }
                 }
             }
         }
+        Some(())
     });
 }
