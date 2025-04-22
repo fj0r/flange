@@ -7,6 +7,7 @@ use serde::Deserialize;
 use std::path::Path;
 use std::sync::{Arc, mpsc::channel};
 use tokio::sync::Mutex;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
@@ -48,7 +49,7 @@ pub struct Webhook {
 #[allow(unused)]
 pub(crate) struct Settings {
     pub queue: Queue,
-    pub webhooks: Vec<Webhook>,
+    pub webhooks: HashMap<String, Webhook>,
 }
 
 impl Settings {

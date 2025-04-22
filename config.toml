@@ -12,7 +12,7 @@ broker = ['localhost:19092']
 topic = ['push']
 group = 'ws'
 
-[[webhooks]]
+[webhooks.history]
 event = 'history'
 enable = false
 endpoint = 'http://localhost:8000/v1/history'
