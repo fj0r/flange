@@ -13,12 +13,9 @@ topic = ['push']
 group = 'ws'
 
 [webhooks.history]
-event = 'history'
 enable = false
 endpoint = 'http://localhost:8000/v1/history'
 
 [webhooks.x]
-event = 'echo'
 enable = true
 endpoint = 'http://localhost:3000/admin/echo'
-accept = 'application/json'

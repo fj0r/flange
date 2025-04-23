@@ -44,7 +44,6 @@ fn default_accept() -> String {
 #[allow(unused)]
 pub struct Webhook {
     pub enable: bool,
-    pub event: String,
     pub endpoint: String,
     #[serde(default = "default_accept")]
     pub accept: String,
