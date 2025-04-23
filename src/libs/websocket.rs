@@ -5,13 +5,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
+use super::message::Event;
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
     state: SharedState<UnboundedSender<T>>,
     event_tx: Option<UnboundedSender<T>>,
 ) where
-    T: for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
+    T: Event + for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
 {
     let (mut sender, mut receiver) = socket.split();
 
@@ -57,6 +58,8 @@ pub async fn handle_ws<T>(
             let text = msg.to_text()?;
             let value = serde_json::to_value(text)?;
             let chat_msg: T = (un.clone(), value).into();
+
+            let _x = chat_msg.event() == Some("asdf");
 
             // send to MQ
             if let Some(ref m) = event_tx {

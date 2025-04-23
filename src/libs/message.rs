@@ -1,8 +1,29 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
-use tokio::sync::{mpsc::{UnboundedSender, UnboundedReceiver}, Mutex};
 use std::fmt::Debug;
+use std::sync::Arc;
+use tokio::sync::{
+    Mutex,
+    mpsc::{UnboundedReceiver, UnboundedSender},
+};
+
+pub trait Event {
+    fn event(&self) -> Option<&str>;
+}
+
+impl Event for Value {
+    fn event(&self) -> Option<&str> {
+        if self.is_object() {
+            if let Some(m) = self.as_object() {
+                let r = m
+                    .get("event")
+                    .and_then(|x| x.as_str());
+                return r;
+            };
+        };
+        return None;
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Envelope {
@@ -23,6 +44,12 @@ impl From<(String, Value)> for ChatMessage {
             sender: value.0,
             content: value.1,
         }
+    }
+}
+
+impl Event for ChatMessage {
+    fn event(&self) -> Option<&str> {
+        self.content.event()
     }
 }
 
