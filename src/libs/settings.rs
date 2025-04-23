@@ -36,10 +36,6 @@ pub struct Queue {
     pub push: QueuePush,
 }
 
-fn default_method() -> String {
-    "post".to_owned()
-}
-
 fn default_accept() -> String {
     "application/json".to_owned()
 }
@@ -50,8 +46,6 @@ pub struct Webhook {
     pub enable: bool,
     pub event: String,
     pub endpoint: String,
-    #[serde(default = "default_method")]
-    pub method: String,
     #[serde(default = "default_accept")]
     pub accept: String,
 }

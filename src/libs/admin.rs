@@ -48,12 +48,14 @@ async fn echo(req: Request) -> Result<Response, AppError> {
     match req.headers().get(ACCEPT).map(|x| x.as_bytes()) {
         Some(b"application/json") => {
             let body = req.into_body();
-            let limit = 20480usize;
+            let limit = 204800usize;
             let by = axum::body::to_bytes(body, limit).await?;
             let s = String::from_utf8(by.to_vec())?;
             Ok(Json(from_str::<Value>(&s)?).into_response())
+        },
+        _ => {
+            Ok(req.into_body().into_response())
         }
-        _ => Ok(req.into_body().into_response()),
     }
 }
 

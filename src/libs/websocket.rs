@@ -76,9 +76,11 @@ pub async fn handle_ws<T>(
                 let whs = webhooks.read().await;
                 if whs.contains_key(ev) {
                     if let Some(wh) = whs.get(ev) {
-                        is_webhook = true;
-                        let r = handle_webhook(wh, chat_msg.clone()).await;
-                        let _ = tx.send(r);
+                        if wh.enable {
+                            is_webhook = true;
+                            let r = handle_webhook(wh, chat_msg.clone()).await?;
+                            let _ = tx.send(r);
+                        }
                     }
                 }
             }

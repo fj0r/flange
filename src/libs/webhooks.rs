@@ -1,11 +1,16 @@
 use std::fmt::Debug;
-
 use super::settings::Webhook;
-pub async fn handle_webhook<'a, T>(wh: &'a Webhook, msg: T) -> T
+use reqwest::{Body, Error};
+use serde::{Serialize, de::DeserializeOwned};
+
+pub async fn handle_webhook<'a, T>(wh: &'a Webhook, msg: T) -> Result<T, Error>
 where
-    T: Debug,
+    T: Debug + Serialize + DeserializeOwned
 {
-    println!("{:?}", wh);
-    println!("{:?}", msg);
-    return msg;
+    let client = reqwest::Client::new();
+    let r = client.post(&wh.endpoint)
+        .json(&msg)
+        .send()
+        .await?;
+    r.json::<T>().await
 }
