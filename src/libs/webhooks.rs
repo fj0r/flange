@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use super::settings::Webhook;
-use reqwest::{Body, Error};
+use reqwest::Error;
 use serde::{Serialize, de::DeserializeOwned};
 
 pub async fn handle_webhook<'a, T>(wh: &'a Webhook, msg: T) -> Result<T, Error>

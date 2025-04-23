@@ -1,7 +1,7 @@
 use super::message::Event;
 use super::settings::WebhookMap;
 use super::webhooks::handle_webhook;
-use anyhow::Ok;
+use anyhow::Ok as Okk;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
@@ -51,7 +51,7 @@ pub async fn handle_ws<T>(
                 break;
             }
         }
-        Ok(())
+        Okk(())
     });
 
     let un = username.clone();
@@ -65,7 +65,7 @@ pub async fn handle_ws<T>(
         tx.send(msg).ok();
         */
 
-        while let Some(std::result::Result::Ok(msg)) = receiver.next().await {
+        while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             let text = msg.to_text()?;
             let value = serde_json::from_str(text)?;
@@ -78,8 +78,21 @@ pub async fn handle_ws<T>(
                     if let Some(wh) = whs.get(ev) {
                         if wh.enable {
                             is_webhook = true;
-                            let r = handle_webhook(wh, chat_msg.clone()).await?;
-                            let _ = tx.send(r);
+                            if let Ok(r) = handle_webhook(wh, chat_msg.clone()).await {
+                                let _ = tx.send(r);
+                            } else {
+                                let t = format!(
+                                    r#"{{
+                                    "sender": "system",
+                                    "content": {{
+                                        "event": "error",
+                                        "data": "webhook for `{}` failed"
+                                      }}
+                                    }}"#,
+                                    ev
+                                );
+                                let _ = tx.send(serde_json::from_str(&t)?);
+                            }
                         }
                     }
                 }
@@ -94,7 +107,7 @@ pub async fn handle_ws<T>(
 
             tracing::debug!("[ws] {:?}", &chat_msg);
         }
-        Ok(())
+        Okk(())
     });
 
     tokio::select! {
