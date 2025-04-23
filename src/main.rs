@@ -9,9 +9,11 @@ use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
-use libs::settings::{Settings, Config};
+use libs::settings::{Config, Settings};
 use libs::shared::{SharedState, StateChat};
 use libs::websocket::{handle_ws, send_to_ws};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
@@ -43,13 +45,15 @@ async fn main() -> Result<()> {
         None
     };
 
+    let webhooks = Arc::new(RwLock::new(settings.webhooks));
+
     let app = Router::new()
         .route(
             "/channel",
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
                     let event_tx = event_mq.as_ref().and_then(|m| m.get_tx());
-                    ws.on_upgrade(|socket| handle_ws(socket, state, event_tx))
+                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks))
                 },
             ),
         )

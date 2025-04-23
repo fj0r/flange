@@ -6,11 +6,15 @@ use serde_json::Value;
 use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
 use super::message::Event;
+use super::settings::WebhookMap;
+use tokio::sync::RwLock;
+use std::sync::Arc;
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
-    state: SharedState<UnboundedSender<T>>,
     event_tx: Option<UnboundedSender<T>>,
+    state: SharedState<UnboundedSender<T>>,
+    webhooks: Arc<RwLock<WebhookMap>>,
 ) where
     T: Event + for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
 {

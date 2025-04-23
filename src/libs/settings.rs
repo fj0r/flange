@@ -6,7 +6,7 @@ use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watch
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::{Arc, mpsc::channel};
-use std::{ops::Deref, path::Path};
+use std::path::Path;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -56,11 +56,13 @@ pub struct Webhook {
     pub accept: String,
 }
 
+pub type WebhookMap = HashMap<String, Webhook>;
+
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
     pub queue: Queue,
-    pub webhooks: HashMap<String, Webhook>,
+    pub webhooks: WebhookMap,
 }
 
 impl Settings {
