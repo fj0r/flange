@@ -6,16 +6,6 @@ use serde_json::Value;
 use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
 
-// pub async fn ws_handler(
-//     mq: Option<impl MessageQueue + Send>,
-// ) -> Box<dyn FnOnce(WebSocketUpgrade, State<SharedState>) -> Response> {
-//     Box::new(
-//         move |ws: WebSocketUpgrade, State(state): State<SharedState>|  {
-//             ws.on_upgrade(|socket| handle_socket(socket, state, mq))
-//         }
-//     )
-// }
-
 pub async fn handle_socket<T>(
     socket: WebSocket,
     state: SharedState<UnboundedSender<T>>,

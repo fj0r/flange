@@ -43,7 +43,7 @@ export def 'dev client' [] {
 
 export def 'dev test' [] {
     let ji = job spawn { dev serve }
-    sleep 1sec
+    sleep 2sec
     do -i {
         dev client
     }
