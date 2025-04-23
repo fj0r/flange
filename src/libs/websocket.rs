@@ -1,14 +1,15 @@
+use super::message::Event;
+use super::settings::WebhookMap;
+use super::webhooks::handle_webhook;
 use anyhow::Ok;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
-use tokio::sync::mpsc::UnboundedSender;
-use super::message::Event;
-use super::settings::WebhookMap;
-use tokio::sync::RwLock;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+use tokio::sync::mpsc::UnboundedSender;
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
@@ -16,7 +17,14 @@ pub async fn handle_ws<T>(
     state: SharedState<UnboundedSender<T>>,
     webhooks: Arc<RwLock<WebhookMap>>,
 ) where
-    T: Event + for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
+    T: Event
+        + for<'a> Deserialize<'a>
+        + Serialize
+        + From<(String, Value)>
+        + Clone
+        + Debug
+        + Send
+        + 'static,
 {
     let (mut sender, mut receiver) = socket.split();
 
@@ -60,14 +68,26 @@ pub async fn handle_ws<T>(
         while let Some(std::result::Result::Ok(msg)) = receiver.next().await {
             // text protocol of ws
             let text = msg.to_text()?;
-            let value = serde_json::to_value(text)?;
+            let value = serde_json::from_str(text)?;
             let chat_msg: T = (un.clone(), value).into();
 
-            let _x = chat_msg.event() == Some("asdf");
+            let mut is_webhook: bool = false;
+            if let Some(ev) = chat_msg.event() {
+                let whs = webhooks.read().await;
+                if whs.contains_key(ev) {
+                    if let Some(wh) = whs.get(ev) {
+                        is_webhook = true;
+                        let r = handle_webhook(wh, chat_msg.clone()).await;
+                        let _ = tx.send(r);
+                    }
+                }
+            }
 
-            // send to MQ
-            if let Some(ref m) = event_tx {
-                let _ = m.send(chat_msg.clone());
+            // send to event MQ
+            if !is_webhook {
+                if let Some(ref m) = event_tx {
+                    let _ = m.send(chat_msg.clone());
+                }
             }
 
             tracing::debug!("[ws] {:?}", &chat_msg);

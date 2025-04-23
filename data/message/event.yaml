@@ -1,11 +1,12 @@
 receiver: []
 sender: unknown
 content:
-    action: data
-    event: test-data
+    action: merge
+    event: x
     data:
         type: Text
         data:
             upload: true
             event: user-message
         value: Guide
+
