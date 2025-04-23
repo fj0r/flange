@@ -9,7 +9,7 @@ use tokio::sync::mpsc::UnboundedSender;
 pub async fn handle_socket<T>(
     socket: WebSocket,
     state: SharedState<UnboundedSender<T>>,
-    mqtx: Option<UnboundedSender<T>>,
+    event_tx: Option<UnboundedSender<T>>,
 ) where
     T: for<'a> Deserialize<'a> + Serialize + From<(String, Value)> + Clone + Debug + Send + 'static,
 {
@@ -44,7 +44,7 @@ pub async fn handle_socket<T>(
             let chat_msg: T = (un.clone(), value).into();
 
             // send to MQ
-            if let Some(ref m) = mqtx {
+            if let Some(ref m) = event_tx {
                 let _ = m.send(chat_msg.clone());
             }
 

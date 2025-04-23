@@ -48,8 +48,8 @@ async fn main() -> Result<()> {
             "/channel",
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
-                    let mqtx = event_mq.as_ref().and_then(|m| m.get_tx());
-                    ws.on_upgrade(|socket| handle_socket(socket, state, mqtx))
+                    let event_tx = event_mq.as_ref().and_then(|m| m.get_tx());
+                    ws.on_upgrade(|socket| handle_socket(socket, state, event_tx))
                 },
             ),
         )
