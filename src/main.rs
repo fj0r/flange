@@ -11,7 +11,7 @@ use libs::admin::admin_router;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::{Settings, Config};
 use libs::shared::{SharedState, StateChat};
-use libs::websocket::{handle_socket, notify};
+use libs::websocket::{handle_ws, send_to_ws};
 use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
             KafkaManagerPush::new(settings.queue.push.clone());
         push_mq.run().await;
         let shared = shared.clone();
-        notify(&push_mq, &shared).await;
+        send_to_ws(&push_mq, &shared).await;
 
         let mut event_mq: KafkaManagerEvent<ChatMessage> =
             KafkaManagerEvent::new(settings.queue.event.clone());
@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
                     let event_tx = event_mq.as_ref().and_then(|m| m.get_tx());
-                    ws.on_upgrade(|socket| handle_socket(socket, state, event_tx))
+                    ws.on_upgrade(|socket| handle_ws(socket, state, event_tx))
                 },
             ),
         )

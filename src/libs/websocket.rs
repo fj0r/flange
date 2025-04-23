@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::fmt::Debug;
 use tokio::sync::mpsc::UnboundedSender;
 
-pub async fn handle_socket<T>(
+pub async fn handle_ws<T>(
     socket: WebSocket,
     state: SharedState<UnboundedSender<T>>,
     event_tx: Option<UnboundedSender<T>>,
@@ -25,6 +25,21 @@ pub async fn handle_socket<T>(
         username = format!("user_{}", s.count);
         s.sender.insert(username.clone(), tx.clone());
     }
+
+    let mut send_task = tokio::spawn(async move {
+        while let Some(msg) = rx.recv().await {
+            let text = serde_json::to_string(&msg)?;
+            // to ws client
+            if sender
+                .send(axum::extract::ws::Message::Text(text.into()))
+                .await
+                .is_err()
+            {
+                break;
+            }
+        }
+        Ok(())
+    });
 
     let un = username.clone();
 
@@ -53,21 +68,6 @@ pub async fn handle_socket<T>(
         Ok(())
     });
 
-    let mut send_task = tokio::spawn(async move {
-        while let Some(msg) = rx.recv().await {
-            let text = serde_json::to_string(&msg)?;
-            // to ws client
-            if sender
-                .send(axum::extract::ws::Message::Text(text.into()))
-                .await
-                .is_err()
-            {
-                break;
-            }
-        }
-        Ok(())
-    });
-
     tokio::select! {
         _ = &mut recv_task => recv_task.abort(),
         _ = &mut send_task => send_task.abort(),
@@ -88,7 +88,7 @@ use super::kafka::KafkaManagerPush;
 use super::message::{ChatMessage, Envelope, MessageQueuePush};
 use super::shared::SharedState;
 
-pub async fn notify(
+pub async fn send_to_ws(
     push_mq: &KafkaManagerPush<Envelope>,
     shared: &SharedState<UnboundedSender<ChatMessage>>,
 ) {
