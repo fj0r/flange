@@ -17,3 +17,10 @@ event = 'history'
 enable = false
 endpoint = 'http://localhost:8000/v1/history'
 method = 'post'
+
+[webhooks.echo]
+event = 'echo'
+enable = true
+endpoint = 'http://localhost:3000/admin/echo'
+method = 'post'
+accept = 'application/json'

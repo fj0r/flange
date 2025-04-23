@@ -4,10 +4,10 @@ use figment::{
 };
 use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watcher};
 use serde::Deserialize;
-use std::path::Path;
-use std::sync::{Arc, mpsc::channel};
-use tokio::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::{Arc, mpsc::channel};
+use std::{ops::Deref, path::Path};
+use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
@@ -36,13 +36,24 @@ pub struct Queue {
     pub push: QueuePush,
 }
 
+fn default_method() -> String {
+    "post".to_owned()
+}
+
+fn default_accept() -> String {
+    "application/json".to_owned()
+}
+
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Webhook {
     pub enable: bool,
     pub event: String,
     pub endpoint: String,
+    #[serde(default = "default_method")]
     pub method: String,
+    #[serde(default = "default_accept")]
+    pub accept: String,
 }
 
 #[derive(Debug, Deserialize)]
