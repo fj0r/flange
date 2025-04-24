@@ -52,7 +52,7 @@ pub async fn handle_ws<T>(
         }
         let s = TERA.render(&g.path, &context).unwrap();
         let v: Value = from_str(&s).unwrap();
-        let msg: T = (Session(0), v).into();
+        let msg: T = (Session::default(), v).into();
         if let Ok(text) = serde_json::to_string(&msg) {
             let _ = sender
                 .send(axum::extract::ws::Message::Text(text.into()))

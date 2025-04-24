@@ -1,4 +1,4 @@
-use super::message::{ChatMessage, Session, SessionId};
+use super::message::{ChatMessage, Session, SessionCount};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
@@ -6,14 +6,14 @@ use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
 #[derive(Debug, Clone)]
 pub struct Shared<T> {
     pub sender: HashMap<Session, T>,
-    pub count: SessionId,
+    pub count: SessionCount,
 }
 
 impl<T> Shared<T> {
     pub fn new() -> Self {
         Shared {
             sender: HashMap::new(),
-            count: SessionId::default(),
+            count: SessionCount::default(),
         }
     }
 }

@@ -1,5 +1,5 @@
 receiver: []
-sender: 0
+sender: ""
 content:
     action: merge
     event: x

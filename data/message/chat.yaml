@@ -1,6 +1,6 @@
 
 receiver: []
-sender: 0
+sender: ""
 content:
     action: join
     event: chat

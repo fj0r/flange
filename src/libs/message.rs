@@ -26,20 +26,21 @@ impl Event for Value {
     }
 }
 
-pub type SessionId = u64;
+pub type SessionCount = u128;
+pub type SessionId = String;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
 pub struct Session(pub SessionId);
 
-impl From<SessionId> for Session {
-    fn from(value: SessionId) -> Self {
-        Self(value)
+impl From<SessionCount> for Session {
+    fn from(value: SessionCount) -> Self {
+        Self(value.to_string())
     }
 }
 
 impl Display for Session {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{:?}", self.0)
     }
 }
 
