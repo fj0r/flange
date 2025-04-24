@@ -75,7 +75,6 @@ pub async fn handle_ws<T>(
         Okk(())
     });
 
-
     let sid_cloned = sid.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
@@ -94,16 +93,10 @@ pub async fn handle_ws<T>(
                             if let Ok(r) = handle_webhook(wh, chat_msg.clone()).await {
                                 let _ = tx.send(r);
                             } else {
-                                let t = format!(
-                                    r#"{{
-                                    "sender": "system",
-                                    "content": {{
-                                        "event": "error",
-                                        "data": "webhook for `{}` failed"
-                                      }}
-                                    }}"#,
-                                    ev
-                                );
+                                let mut context = Context::new();
+                                context.insert("session_id", &sid_cloned);
+                                context.insert("event", &ev);
+                                let t = TERA.render("webhook_error.json", &context).unwrap();
                                 let _ = tx.send(serde_json::from_str(&t)?);
                             }
                         }

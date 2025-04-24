@@ -156,6 +156,8 @@ where
                             if let Err(e) = consumer_tx.send(value) {
                                 error!("Failed to send message from consumer: {}", e);
                             }
+                        } else {
+                            error!("Failed deserializing: {}", payload);
                         }
                         /*
                         info!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
