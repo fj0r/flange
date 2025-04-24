@@ -1,11 +1,11 @@
 use super::message::Event;
-use super::settings::WebhookMap;
+use super::settings::{AssetsList, WebhookMap};
 use super::webhooks::handle_webhook;
 use anyhow::Ok as Okk;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, from_str};
 use std::fmt::Debug;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -16,6 +16,7 @@ pub async fn handle_ws<T>(
     event_tx: Option<UnboundedSender<T>>,
     state: SharedState<UnboundedSender<T>>,
     webhooks: Arc<RwLock<WebhookMap>>,
+    greet: AssetsList,
 ) where
     T: Event
         + for<'a> Deserialize<'a>
@@ -39,6 +40,21 @@ pub async fn handle_ws<T>(
         s.sender.insert(username.clone(), tx.clone());
     }
 
+    for g in greet.iter() {
+        if !g.enable {
+            continue;
+        }
+        if let Ok(s) = tokio::fs::read_to_string(&g.path).await {
+            let v: Value = from_str(&s).unwrap();
+            let msg: T = ("system".into(), v).into();
+            if let Ok(text) = serde_json::to_string(&msg) {
+                let _ = sender
+                    .send(axum::extract::ws::Message::Text(text.into()))
+                    .await;
+            }
+        }
+    }
+
     let mut send_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
             let text = serde_json::to_string(&msg)?;
@@ -57,14 +73,6 @@ pub async fn handle_ws<T>(
     let un = username.clone();
 
     let mut recv_task = tokio::spawn(async move {
-        /* FIXME: stuck
-        let msg = ChatMessage {
-            sender: "system".into(),
-            content: format!("Welcome, {}!", un).into(),
-        };
-        tx.send(msg).ok();
-        */
-
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             let text = msg.to_text()?;

@@ -11,6 +11,16 @@ use tokio::sync::Mutex;
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
+pub struct Assets {
+    #[serde(default)]
+    pub enable: bool,
+    pub path: String
+}
+
+pub type AssetsList = Vec<Assets>;
+
+#[derive(Debug, Deserialize, Clone)]
+#[allow(unused)]
 pub struct QueuePush {
     #[serde(rename = "type")]
     pub kind: String,
@@ -56,6 +66,7 @@ pub type WebhookMap = HashMap<String, Webhook>;
 pub(crate) struct Settings {
     pub queue: Queue,
     pub webhooks: WebhookMap,
+    pub greet: AssetsList,
 }
 
 impl Settings {

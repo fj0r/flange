@@ -46,6 +46,8 @@ async fn main() -> Result<()> {
     };
 
     let webhooks = Arc::new(RwLock::new(settings.webhooks));
+    //let greet = Arc::new(RwLock::new(settings.greet));
+    let greet = settings.greet;
 
     let app = Router::new()
         .route(
@@ -53,7 +55,7 @@ async fn main() -> Result<()> {
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
                     let event_tx = event_mq.as_ref().and_then(|m| m.get_tx());
-                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks))
+                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks, greet))
                 },
             ),
         )

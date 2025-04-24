@@ -6,9 +6,14 @@
       - Streamed fragments of AI responses
           - No need for long-term storage (a complete copy should exist in the event queue)
           - Not convenient for the recipient to extract the content
-- [ ] webhook
-    - receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
-    - event map
-    - history srv
-    - hot reload config
-- [ ] channel/chatroom
+- [x] webhook
+    - [x] receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
+    - [x] event map
+    - [ ] history srv
+    - [ ] hot reload config
+- [ ] topic/channel/chatroom
+- [x] top event (unachievable)
+- [x] greet
+    - [x] init ui
+    - [ ] login
+    - [ ] template
