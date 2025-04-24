@@ -1,0 +1,8 @@
+{
+  "action": "merge",
+  "event": "login",
+  "data": {
+    "type": "text",
+    "value": "{{username}}"
+  }
+}

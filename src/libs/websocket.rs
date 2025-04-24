@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, from_str};
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::sync::LazyLock;
+use tera::{Context, Tera};
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -36,22 +38,24 @@ pub async fn handle_ws<T>(
         let s1 = state.clone();
         let mut s = s1.write().await;
         s.count += 1;
-        username = format!("user_{}", s.count);
+        username = format!("{}", s.count);
         s.sender.insert(username.clone(), tx.clone());
     }
 
+    let mut context = Context::new();
+    context.insert("username", &username);
+    static TERA: LazyLock<Tera> = LazyLock::new(|| Tera::new("assets/*").unwrap());
     for g in greet.iter() {
         if !g.enable {
             continue;
         }
-        if let Ok(s) = tokio::fs::read_to_string(&g.path).await {
-            let v: Value = from_str(&s).unwrap();
-            let msg: T = ("system".into(), v).into();
-            if let Ok(text) = serde_json::to_string(&msg) {
-                let _ = sender
-                    .send(axum::extract::ws::Message::Text(text.into()))
-                    .await;
-            }
+        let s = TERA.render(&g.path, &context).unwrap();
+        let v: Value = from_str(&s).unwrap();
+        let msg: T = ("system".into(), v).into();
+        if let Ok(text) = serde_json::to_string(&msg) {
+            let _ = sender
+                .send(axum::extract::ws::Message::Text(text.into()))
+                .await;
         }
     }
 

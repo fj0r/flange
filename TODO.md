@@ -15,5 +15,5 @@
 - [x] top event (unachievable)
 - [x] greet
     - [x] init ui
-    - [ ] login
-    - [ ] template
+    - [x] template
+- [ ] login
