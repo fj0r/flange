@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
+use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::{
     Mutex,
@@ -25,21 +26,45 @@ impl Event for Value {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
+pub struct Session(pub u128);
+
+impl From<u128> for Session {
+    fn from(value: u128) -> Self {
+        Self(value)
+    }
+}
+
+impl Display for Session {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Deref for Session {
+    type Target = u128;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Envelope {
-    pub receiver: Vec<String>,
+    pub receiver: Vec<Session>,
     #[serde(flatten)]
     pub message: ChatMessage,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct ChatMessage {
-    pub sender: String,
+    pub sender: Session,
     pub content: Value,
 }
 
-impl From<(String, Value)> for ChatMessage {
-    fn from(value: (String, Value)) -> Self {
+
+impl From<(Session, Value)> for ChatMessage {
+    fn from(value: (Session, Value)) -> Self {
         ChatMessage {
             sender: value.0,
             content: value.1,

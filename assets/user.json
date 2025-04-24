@@ -3,6 +3,6 @@
   "event": "login",
   "data": {
     "type": "text",
-    "value": "{{username}}"
+    "value": {{session_id}}
   }
 }

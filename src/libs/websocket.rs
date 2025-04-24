@@ -1,4 +1,4 @@
-use super::message::Event;
+use super::message::{Event, Session};
 use super::settings::{AssetsList, WebhookMap};
 use super::webhooks::handle_webhook;
 use anyhow::Ok as Okk;
@@ -23,7 +23,7 @@ pub async fn handle_ws<T>(
     T: Event
         + for<'a> Deserialize<'a>
         + Serialize
-        + From<(String, Value)>
+        + From<(Session, Value)>
         + Clone
         + Debug
         + Send
@@ -32,18 +32,19 @@ pub async fn handle_ws<T>(
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
-    let username: String;
+    let sid: Session;
 
     {
         let s1 = state.clone();
         let mut s = s1.write().await;
         s.count += 1;
-        username = format!("{}", s.count);
-        s.sender.insert(username.clone(), tx.clone());
+        sid = s.count.into();
+        s.sender.insert(sid.clone(), tx.clone());
     }
 
+    tracing::info!("Connection opened for {}", &sid);
     let mut context = Context::new();
-    context.insert("username", &username);
+    context.insert("session_id", &sid);
     static TERA: LazyLock<Tera> = LazyLock::new(|| Tera::new("assets/*").unwrap());
     for g in greet.iter() {
         if !g.enable {
@@ -51,7 +52,7 @@ pub async fn handle_ws<T>(
         }
         let s = TERA.render(&g.path, &context).unwrap();
         let v: Value = from_str(&s).unwrap();
-        let msg: T = ("system".into(), v).into();
+        let msg: T = (Session(0), v).into();
         if let Ok(text) = serde_json::to_string(&msg) {
             let _ = sender
                 .send(axum::extract::ws::Message::Text(text.into()))
@@ -74,14 +75,14 @@ pub async fn handle_ws<T>(
         Okk(())
     });
 
-    let un = username.clone();
 
+    let sid_cloned = sid.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             let text = msg.to_text()?;
             let value = serde_json::from_str(text)?;
-            let chat_msg: T = (un.clone(), value).into();
+            let chat_msg: T = (sid_cloned.clone(), value).into();
 
             let mut is_webhook: bool = false;
             if let Some(ev) = chat_msg.event() {
@@ -127,9 +128,9 @@ pub async fn handle_ws<T>(
         _ = &mut send_task => send_task.abort(),
     };
 
-    tracing::info!("Connection closed for {}", &username);
+    tracing::info!("Connection closed for {}", &sid);
     let mut s = state.write().await;
-    s.sender.remove(&username);
+    s.sender.remove(&sid);
 }
 
 #[allow(unused)]

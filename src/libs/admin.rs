@@ -7,19 +7,19 @@ use axum::{
 };
 
 use super::error::AppError;
-use super::{message, shared::StateChat};
+use super::{message::{Envelope, Session}, shared::StateChat};
 use serde_json::{Value, from_str};
 
 async fn send(
     State(state): State<StateChat>,
-    Json(payload): Json<message::Envelope>,
-) -> Result<(StatusCode, Json<Vec<String>>), AppError> {
-    let mut succ: Vec<String> = Vec::new();
+    Json(payload): Json<Envelope>,
+) -> Result<(StatusCode, Json<Vec<Session>>), AppError> {
+    let mut succ: Vec<Session> = Vec::new();
     let s = state.read().await;
     if payload.receiver.is_empty() {
         for (n, c) in s.sender.iter() {
             let _ = c.send(payload.message.clone());
-            succ.push(n.into());
+            succ.push(n.to_owned());
         }
     } else {
         for r in payload.receiver {
@@ -34,9 +34,9 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-async fn list(State(state): State<StateChat>) -> axum::Json<Vec<String>> {
+async fn list(State(state): State<StateChat>) -> axum::Json<Vec<Session>> {
     let s = state.read().await;
-    Json(s.sender.keys().cloned().collect::<Vec<String>>())
+    Json(s.sender.keys().cloned().collect::<Vec<Session>>())
 }
 
 struct Req<'a>(&'a Request);
