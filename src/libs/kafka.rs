@@ -149,7 +149,7 @@ where
                                 }
                             }
                             Err(e) => {
-                                error!("{:?}", e);
+                                error!("Failed to deserialize: {:?}", e);
                             }
                         }
                         /*
