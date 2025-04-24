@@ -26,11 +26,13 @@ impl Event for Value {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
-pub struct Session(pub u128);
+pub type SessionId = u64;
 
-impl From<u128> for Session {
-    fn from(value: u128) -> Self {
+#[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
+pub struct Session(pub SessionId);
+
+impl From<SessionId> for Session {
+    fn from(value: SessionId) -> Self {
         Self(value)
     }
 }
@@ -42,7 +44,7 @@ impl Display for Session {
 }
 
 impl Deref for Session {
-    type Target = u128;
+    type Target = SessionId;
     fn deref(&self) -> &Self::Target {
         &self.0
     }

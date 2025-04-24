@@ -1,5 +1,5 @@
 use super::message::{MessageQueueEvent, MessageQueuePush};
-use super::settings::{QueuePush, QueueEvent};
+use super::settings::{QueueEvent, QueuePush};
 use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
 use rdkafka::consumer::stream_consumer::StreamConsumer;
@@ -18,8 +18,7 @@ use tokio::sync::{
     mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
 };
 use tokio::task::spawn;
-use tracing::{info, warn, error};
-
+use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct KafkaManagerEvent<T>
@@ -32,16 +31,12 @@ where
 
 impl<T> KafkaManagerEvent<T>
 where
-    T: Send + Serialize + DeserializeOwned + 'static
+    T: Send + Serialize + DeserializeOwned + 'static,
 {
     pub fn new(producer: QueueEvent) -> Self {
-        Self {
-            tx: None,
-            producer,
-        }
+        Self { tx: None, producer }
     }
 }
-
 
 impl<T> MessageQueueEvent for KafkaManagerEvent<T>
 where
@@ -78,7 +73,6 @@ where
             }
         });
 
-
         self.tx = Some(producer_tx);
     }
 
@@ -86,7 +80,6 @@ where
         self.tx.clone()
     }
 }
-
 
 #[derive(Clone)]
 pub struct KafkaManagerPush<T>
@@ -102,10 +95,7 @@ where
     T: Send + Serialize + DeserializeOwned + 'static,
 {
     pub fn new(consumer: QueuePush) -> Self {
-        Self {
-            rx: None,
-            consumer,
-        }
+        Self { rx: None, consumer }
     }
 }
 
@@ -152,12 +142,15 @@ where
                             }
                         };
 
-                        if let Ok(value) = serde_json::from_str::<Self::Item>(payload) {
-                            if let Err(e) = consumer_tx.send(value) {
-                                error!("Failed to send message from consumer: {}", e);
+                        match serde_json::from_str::<Self::Item>(payload) {
+                            Ok(value) => {
+                                if let Err(e) = consumer_tx.send(value) {
+                                    error!("Failed to send message from consumer: {}", e);
+                                }
                             }
-                        } else {
-                            error!("Failed deserializing: {}", payload);
+                            Err(e) => {
+                                error!("{:?}", e);
+                            }
                         }
                         /*
                         info!("key: '{:?}', payload: '{}', topic: {}, partition: {}, offset: {}, timestamp: {:?}",
@@ -180,7 +173,6 @@ where
         self.rx.clone()
     }
 }
-
 
 struct CustomContext;
 
