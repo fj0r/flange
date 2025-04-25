@@ -155,11 +155,28 @@ export def 'rpk up' [
 }
 
 export def 'rpk test' [] {
+    dcr redpanda
     rpk up
+
+    let readyness = {
+        ^$env.CONTCTL ...[
+            exec redpanda
+            rpk cluster info
+        ]
+    }
+    mut time = 0
+    loop {
+        print -e $"(ansi light_gray)wait redpanda (ansi light_gray_italic)(1sec * $time)(ansi reset)"
+        let c = do --ignore-errors $readyness | complete | get exit_code
+        if ($c == 0) { break }
+        sleep 1sec
+        $time = $time + 1
+    }
+
     let s = open $CONFIG
     rpk topic create $s.queue.event.topic
     rpk topic create $s.queue.push.topic.0
-    rpk send --topic event (open data/message/event.yaml)
+    # rpk send --topic event (open data/message/event.yaml)
     # for i in 1..100 {
     #     rpk send --topic event $i
     # }
