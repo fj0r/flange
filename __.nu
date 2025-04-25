@@ -154,7 +154,7 @@ export def 'rpk up' [
     }
 }
 
-export def 'rpk test' [] {
+export def 'rpk test' [--product --consume] {
     dcr redpanda
     rpk up
 
@@ -176,9 +176,12 @@ export def 'rpk test' [] {
     let s = open $CONFIG
     rpk topic create $s.queue.event.topic
     rpk topic create $s.queue.push.topic.0
-    # rpk send --topic event (open data/message/event.yaml)
-    # for i in 1..100 {
-    #     rpk send --topic event $i
-    # }
-    # rpk consume event
+
+    if $product {
+        rpk send --topic $s.queue.event.topic (open data/message/event.yaml)
+    }
+
+    if $consume {
+        rpk consume $s.queue.event.topic
+    }
 }
