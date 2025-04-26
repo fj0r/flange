@@ -11,6 +11,9 @@
       "attrs": {
         "class": "shadow nogrow",
         "format": "md"
+      },
+      "data": {
+          "event": "title"
       }
     },
     {

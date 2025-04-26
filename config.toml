@@ -26,4 +26,4 @@ path = 'user.json'
 
 [[greet]]
 enable = true
-path = 'greet.json'
+path = 'layout.json'
