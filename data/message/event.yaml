@@ -1,12 +1,7 @@
 receiver: []
-sender: ""
+sender: "1"
 content:
     action: merge
-    event: x
-    data:
-        type: Text
-        data:
-            upload: true
-            event: user-message
-        value: Guide
+    event: message
+    data: build a message APP.
 
