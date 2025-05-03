@@ -32,13 +32,13 @@ async fn main() -> Result<()> {
 
     let event_mq = if settings.queue.enable {
         let mut push_mq: KafkaManagerPush<Envelope> =
-            KafkaManagerPush::new(settings.queue.push.clone());
+            KafkaManagerPush::new(settings.queue.push);
         push_mq.run().await;
         let shared = shared.clone();
         send_to_ws(&push_mq, &shared).await;
 
         let mut event_mq: KafkaManagerEvent<ChatMessage> =
-            KafkaManagerEvent::new(settings.queue.event.clone());
+            KafkaManagerEvent::new(settings.queue.event);
         event_mq.run().await;
         Some(event_mq)
     } else {

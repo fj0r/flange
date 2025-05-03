@@ -49,7 +49,7 @@ where
         let producer_cfg = self.producer.clone();
 
         let producer: FutureProducer = ClientConfig::new()
-            .set("bootstrap.servers", producer_cfg.broker[0].clone())
+            .set("bootstrap.servers", &producer_cfg.broker[0])
             .set("message.timeout.ms", "5000")
             .create()
             .expect("Failed to create Kafka producer");
