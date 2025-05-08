@@ -21,7 +21,8 @@
       {
         "type": "list",
         "attrs": {
-          "class": "box xs gap scrolly"
+          "class": "box xs gap scrolly",
+          "scroll": true
         },
         "data": {
           "event": "chat"
