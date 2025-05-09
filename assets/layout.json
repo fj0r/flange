@@ -31,7 +31,14 @@
           {
             "type": "card",
             "attrs": {
-              "class": "nogrow"
+              "class": "nogrow _ye primary",
+              "selector": "ask"
+            }
+          },
+          {
+            "type": "card",
+            "attrs": {
+              "class": "nogrow _ys"
             }
           }
         ]
