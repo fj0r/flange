@@ -7,7 +7,7 @@ overlay use -r __.nu as __ -p
 
 start redpanda and create topic
 ```nu
-__ rpk test
+__ dev rpk
 ```
 
 start server

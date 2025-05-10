@@ -154,7 +154,7 @@ export def 'rpk up' [
     }
 }
 
-export def 'rpk test' [--product --consume] {
+export def 'dev rpk' [--product --consume] {
     dcr redpanda
     rpk up
 
