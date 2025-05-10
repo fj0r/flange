@@ -31,7 +31,7 @@
           {
             "type": "card",
             "attrs": {
-              "class": "nogrow _ye primary",
+              "class": "nogrow _ye accent",
               "selector": "ask"
             }
           },
