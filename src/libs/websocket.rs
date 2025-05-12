@@ -1,15 +1,16 @@
 use super::message::{Event, Session};
 use super::settings::{AssetsList, WebhookMap};
+use super::template::Tmpls;
 use super::webhooks::handle_webhook;
 use anyhow::Ok as Okk;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
+use minijinja::context;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, from_str};
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::LazyLock;
-use tera::{Context, Tera};
 use tokio::sync::RwLock;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -43,14 +44,19 @@ pub async fn handle_ws<T>(
     }
 
     tracing::info!("Connection opened for {}", &sid);
-    let mut context = Context::new();
-    context.insert("session_id", &sid);
-    static TERA: LazyLock<Tera> = LazyLock::new(|| Tera::new("assets/*").unwrap());
+
+    let context = context! { session_id => &sid };
+    static TMPL: LazyLock<Tmpls> = LazyLock::new(|| Tmpls::new("assets").unwrap());
+
     for g in greet.iter() {
         if !g.enable {
             continue;
         }
-        let s = TERA.render(&g.path, &context).unwrap();
+        let s = TMPL
+            .get_template(&g.path)
+            .unwrap()
+            .render(&context)
+            .unwrap();
         let v: Value = from_str(&s).unwrap();
         let msg: T = (Session::default(), v).into();
         if let Ok(text) = serde_json::to_string(&msg) {
@@ -93,10 +99,15 @@ pub async fn handle_ws<T>(
                             if let Ok(r) = handle_webhook(wh, chat_msg.clone()).await {
                                 let _ = tx.send(r);
                             } else {
-                                let mut context = Context::new();
-                                context.insert("session_id", &sid_cloned);
-                                context.insert("event", &ev);
-                                let t = TERA.render("webhook_error.json", &context).unwrap();
+                                let context = context! {
+                                    session_id => &sid_cloned,
+                                    event => &ev
+                                };
+                                let t = TMPL
+                                    .get_template("webhook_error.json")
+                                    .unwrap()
+                                    .render(&context)
+                                    .unwrap();
                                 let _ = tx.send(serde_json::from_str(&t)?);
                             }
                         }

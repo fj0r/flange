@@ -5,4 +5,5 @@ pub mod kafka;
 pub mod message;
 pub mod settings;
 pub mod shared;
+pub mod template;
 pub mod webhooks;
