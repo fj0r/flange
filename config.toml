@@ -27,3 +27,7 @@ path = 'user.json'
 [[greet]]
 enable = true
 path = 'layout.json'
+
+[[greet]]
+enable = true
+path = 'ai.tmpl.json'
