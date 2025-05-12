@@ -15,7 +15,7 @@
           "format": "md"
         },
         "data": {
-          "event": "title"
+          "event": "login"
         }
       },
       {
