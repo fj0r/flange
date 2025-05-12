@@ -23,7 +23,7 @@ fn main() {
     let x = serde_json::from_str::<Tx>(&p);
     let mut e = Environment::new();
     e.add_template("test", &p).unwrap();
-    let c = context!{};
+    let c = context!{ xxx => "\"\n" };
     let y = e.get_template("test").unwrap().render(c).unwrap();
     println!("{:?}", y);
 
