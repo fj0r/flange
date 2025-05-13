@@ -59,7 +59,6 @@
               {
                 "type": "input",
                 "data": {
-                  "upload": true,
                   "event": "message"
                 }
               }
