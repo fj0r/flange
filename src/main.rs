@@ -31,14 +31,18 @@ async fn main() -> Result<()> {
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
     let event_mq = if settings.queue.enable {
-        let mut push_mq: KafkaManagerPush<Envelope> =
-            KafkaManagerPush::new(settings.queue.push);
+        let mut push_mq: KafkaManagerPush<Envelope> = match settings.queue.push.kind.as_str() {
+            "kafka" => KafkaManagerPush::new(settings.queue.push),
+            _ => unreachable!(),
+        };
         push_mq.run().await;
         let shared = shared.clone();
         send_to_ws(&push_mq, &shared).await;
 
-        let mut event_mq: KafkaManagerEvent<ChatMessage> =
-            KafkaManagerEvent::new(settings.queue.event);
+        let mut event_mq: KafkaManagerEvent<ChatMessage> = match settings.queue.event.kind.as_str() {
+            "kafka" => KafkaManagerEvent::new(settings.queue.event),
+            _ => unreachable!(),
+        };
         event_mq.run().await;
         Some(event_mq)
     } else {
