@@ -143,14 +143,13 @@ trait Client {
     fn on_message() {}
 }
 
-use super::kafka::KafkaManagerPush;
 use super::message::{ChatMessage, Envelope, MessageQueuePush};
 use super::shared::SharedState;
 
-pub async fn send_to_ws(
-    push_mq: &KafkaManagerPush<Envelope>,
+pub async fn send_to_ws<T>(
+    push_mq: &T,
     shared: &SharedState<UnboundedSender<ChatMessage>>,
-) {
+) where T: MessageQueuePush<Item=Envelope> {
     let mqrx = push_mq.get_rx();
     let shared = shared.clone();
     tokio::spawn(async move {
