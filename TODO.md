@@ -16,4 +16,4 @@
 - [x] greet
     - [x] init ui
     - [x] template
-- [ ] login
+- [ ] auth/login
