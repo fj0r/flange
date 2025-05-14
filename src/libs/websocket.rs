@@ -11,8 +11,8 @@ use serde_json::{Value, from_str};
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::LazyLock;
-use tokio::sync::RwLock;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::{RwLock, Mutex};
+use tokio::sync::mpsc::{UnboundedSender, UnboundedReceiver};
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
@@ -143,18 +143,16 @@ trait Client {
     fn on_message() {}
 }
 
-use super::message::{ChatMessage, Envelope, MessageQueuePush};
+use super::message::{ChatMessage, Envelope};
 use super::shared::SharedState;
 
-pub async fn send_to_ws<T>(
-    push_mq: &T,
+pub async fn send_to_ws(
+    mqrx: Arc<Mutex<UnboundedReceiver<Envelope>>>,
     shared: &SharedState<UnboundedSender<ChatMessage>>,
-) where T: MessageQueuePush<Item=Envelope> {
-    let mqrx = push_mq.get_rx();
+) {
     let shared = shared.clone();
     tokio::spawn(async move {
-        let rx = mqrx?;
-        let mut rx = rx.lock().await;
+        let mut rx = mqrx.lock().await;
 
         while let Some(x) = rx.recv().await {
             if !x.receiver.is_empty() {

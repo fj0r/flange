@@ -4,7 +4,7 @@ use libs::message::{ChatMessage, Envelope, MessageQueueEvent, MessageQueuePush};
 use tracing::info;
 use tracing_subscriber;
 mod libs;
-use anyhow::{Ok, Result};
+use anyhow::{Error, Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
@@ -30,27 +30,34 @@ async fn main() -> Result<()> {
 
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
-    let event_mq = if settings.queue.enable {
-        let mut push_mq: KafkaManagerPush<Envelope> = match settings.queue.push.kind.as_str() {
-            "kafka" => KafkaManagerPush::new(settings.queue.push),
+    let event_tx = if settings.queue.enable {
+        let push_mq: KafkaManagerPush<Envelope> = match settings.queue.push.kind.as_str() {
+            "kafka" => {
+                let mut push_mq = KafkaManagerPush::new(settings.queue.push);
+                push_mq.run().await;
+                push_mq
+            }
             _ => unreachable!(),
         };
-        push_mq.run().await;
         let shared = shared.clone();
-        send_to_ws(&push_mq, &shared).await;
-
-        let mut event_mq: KafkaManagerEvent<ChatMessage> = match settings.queue.event.kind.as_str() {
-            "kafka" => KafkaManagerEvent::new(settings.queue.event),
-            _ => unreachable!(),
+        let Some(mqrx) = push_mq.get_rx() else {
+            unreachable!()
         };
-        event_mq.run().await;
-        Some(event_mq)
+        send_to_ws(mqrx, &shared).await;
+
+        match settings.queue.event.kind.as_str() {
+            "kafka" => {
+                let mut event_mq = KafkaManagerEvent::new(settings.queue.event);
+                event_mq.run().await;
+                event_mq.get_tx()
+            }
+            _ => unreachable!(),
+        }
     } else {
         None
     };
 
     let webhooks = Arc::new(RwLock::new(settings.webhooks));
-    //let greet = Arc::new(RwLock::new(settings.greet));
     let greet = settings.greet;
 
     let app = Router::new()
@@ -58,7 +65,6 @@ async fn main() -> Result<()> {
             "/channel",
             get(
                 |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
-                    let event_tx = event_mq.as_ref().and_then(|m| m.get_tx());
                     ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks, greet))
                 },
             ),
