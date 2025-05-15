@@ -40,11 +40,11 @@ async fn list(State(state): State<StateChat>) -> axum::Json<Vec<Session>> {
 }
 
 struct Req<'a>(&'a Request);
-impl<'a> std::fmt::Display for Req<'a> {
+impl std::fmt::Display for Req<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let _ = writeln!(f, "### {} {}", self.0.method(), self.0.uri());
         for (name, value) in self.0.headers() {
-            let _ = writeln!(f, "  | {}: {:?}", name.to_string(), value);
+            let _ = writeln!(f, "  | {}: {:?}", name, value);
         }
         Ok(())
     }

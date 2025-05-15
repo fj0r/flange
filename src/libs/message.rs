@@ -22,7 +22,7 @@ impl Event for Value {
                 return r;
             };
         };
-        return None;
+        None
     }
 }
 

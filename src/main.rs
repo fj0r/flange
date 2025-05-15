@@ -1,10 +1,9 @@
 use axum::{Router, routing::get};
 use libs::message::{ChatMessage, Envelope, MessageQueueEvent, MessageQueuePush};
-
 use tracing::info;
 use tracing_subscriber;
 mod libs;
-use anyhow::{Error, Ok, Result};
+use anyhow::{Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
@@ -21,7 +20,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let mut config = Config::new()?;
-    let _ = config.listen().await.unwrap();
+    config.listen().await.unwrap();
     dbg!(&config.data);
 
     let settings = Settings::new()?;

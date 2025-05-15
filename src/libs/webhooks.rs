@@ -3,7 +3,7 @@ use super::settings::Webhook;
 use reqwest::Error;
 use serde::{Serialize, de::DeserializeOwned};
 
-pub async fn handle_webhook<'a, T>(wh: &'a Webhook, msg: T) -> Result<T, Error>
+pub async fn handle_webhook<T>(wh: &Webhook, msg: T) -> Result<T, Error>
 where
     T: Debug + Serialize + DeserializeOwned
 {
