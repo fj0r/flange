@@ -1,5 +1,6 @@
-use super::message::{MessageQueueEvent, MessageQueuePush};
+use super::message::{Created, Event, MessageQueueEvent, MessageQueuePush};
 use super::settings::{QueueEvent, QueuePush};
+use rdkafka::Timestamp;
 use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
 use rdkafka::consumer::stream_consumer::StreamConsumer;
@@ -13,12 +14,24 @@ use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Duration;
+use time::OffsetDateTime;
 use tokio::sync::{
     Mutex,
     mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
 };
 use tokio::task::spawn;
 use tracing::{error, info, warn};
+
+impl From<Timestamp> for Created {
+    fn from(value: Timestamp) -> Self {
+        if let Timestamp::CreateTime(ts) = value {
+            if let Ok(ts) = OffsetDateTime::from_unix_timestamp(ts / 1000) {
+                return Self(ts);
+            }
+        }
+        Self(OffsetDateTime::from_unix_timestamp(0).unwrap())
+    }
+}
 
 #[derive(Clone)]
 pub struct KafkaManagerEvent<T>
@@ -101,7 +114,7 @@ where
 
 impl<T> MessageQueuePush for KafkaManagerPush<T>
 where
-    T: Debug + Clone + Send + Serialize + DeserializeOwned + 'static,
+    T: Debug + Clone + Send + Serialize + DeserializeOwned + Event + 'static,
 {
     type Item = T;
 
@@ -143,7 +156,8 @@ where
                         };
 
                         match serde_json::from_str::<Self::Item>(payload) {
-                            Ok(value) => {
+                            Ok(mut value) => {
+                                value.set_time(m.timestamp().into());
                                 if let Err(e) = consumer_tx.send(value) {
                                     error!("Failed to send message from consumer: {}", e);
                                 }

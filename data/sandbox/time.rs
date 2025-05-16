@@ -61,5 +61,9 @@ fn main () -> Result<(), Box<dyn std::error::Error>> {
 
     println!("{:?}", serde_json::to_string(&X::default()));
 
+    let t = 1747384961261;
+    println!("{:?}", OffsetDateTime::from_unix_timestamp_nanos(t * 1000_000));
+    println!("{:?}", OffsetDateTime::from_unix_timestamp((t / 1000) as i64));
+
     Ok(())
 }

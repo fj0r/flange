@@ -12,6 +12,7 @@ use tokio::sync::{
 
 pub trait Event {
     fn event(&self) -> Option<&str>;
+    fn set_time(&mut self, time: Created);
 }
 
 impl Event for Value {
@@ -25,6 +26,9 @@ impl Event for Value {
             };
         };
         None
+    }
+    fn set_time(&mut self, _time: Created) {
+        unreachable!()
     }
 }
 
@@ -54,7 +58,7 @@ impl Deref for Session {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct Created(#[serde(with = "rfc3339")]OffsetDateTime);
+pub struct Created(#[serde(with = "rfc3339")] pub OffsetDateTime);
 
 impl Default for Created {
     fn default() -> Self {
@@ -69,10 +73,19 @@ pub struct Envelope {
     pub message: ChatMessage,
 }
 
+impl Event for Envelope {
+    fn event(&self) -> Option<&str> {
+        self.message.event()
+    }
+    fn set_time(&mut self, time: Created) {
+        self.message.set_time(time);
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct ChatMessage {
     pub sender: Session,
-    pub created: Created,
+    pub created: Option<Created>,
     pub content: Value,
 }
 
@@ -81,7 +94,7 @@ impl From<(Session, Value)> for ChatMessage {
     fn from(value: (Session, Value)) -> Self {
         ChatMessage {
             sender: value.0,
-            created: Created::default(),
+            created: Some(Created::default()),
             content: value.1,
         }
     }
@@ -90,6 +103,10 @@ impl From<(Session, Value)> for ChatMessage {
 impl Event for ChatMessage {
     fn event(&self) -> Option<&str> {
         self.content.event()
+    }
+
+    fn set_time(&mut self, time: Created) {
+        self.created = Some(time);
     }
 }
 
