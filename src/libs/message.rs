@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::fmt::{Debug, Display};
 use std::ops::Deref;
 use std::sync::Arc;
+use time::OffsetDateTime;
+use time::serde::rfc3339;
 use tokio::sync::{
     Mutex,
     mpsc::{UnboundedReceiver, UnboundedSender},
@@ -51,6 +53,14 @@ impl Deref for Session {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct Created(#[serde(with = "rfc3339")]OffsetDateTime);
+
+impl Default for Created {
+    fn default() -> Self {
+        Self (OffsetDateTime::now_utc())
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Envelope {
@@ -62,6 +72,7 @@ pub struct Envelope {
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct ChatMessage {
     pub sender: Session,
+    pub created: Created,
     pub content: Value,
 }
 
@@ -70,6 +81,7 @@ impl From<(Session, Value)> for ChatMessage {
     fn from(value: (Session, Value)) -> Self {
         ChatMessage {
             sender: value.0,
+            created: Created::default(),
             content: value.1,
         }
     }
