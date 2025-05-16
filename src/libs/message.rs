@@ -15,22 +15,19 @@ pub trait Event {
     fn set_time(&mut self, time: Created);
 }
 
-impl Event for Value {
-    fn event(&self) -> Option<&str> {
-        if self.is_object() {
-            if let Some(m) = self.as_object() {
-                let r = m
-                    .get("event")
-                    .and_then(|x| x.as_str());
-                return r;
-            };
+
+fn get_value_event(v: &Value) -> Option<&str> {
+    if v.is_object() {
+        if let Some(m) = v.as_object() {
+            let r = m
+                .get("event")
+                .and_then(|x| x.as_str());
+            return r;
         };
-        None
-    }
-    fn set_time(&mut self, _time: Created) {
-        unreachable!()
-    }
+    };
+    None
 }
+
 
 pub type SessionCount = u128;
 pub type SessionId = String;
@@ -102,7 +99,7 @@ impl From<(Session, Value)> for ChatMessage {
 
 impl Event for ChatMessage {
     fn event(&self) -> Option<&str> {
-        self.content.event()
+        get_value_event(&self.content)
     }
 
     fn set_time(&mut self, time: Created) {
