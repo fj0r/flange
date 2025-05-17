@@ -19,7 +19,7 @@
         }
       },
       {
-        "type": "list",
+        "type": "rack",
         "attrs": {
           "class": "box c as gap scrolly",
           "scroll": true
