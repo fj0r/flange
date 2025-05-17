@@ -73,19 +73,19 @@ export def 'rpk subscribe' [topic:string@"rpk topic list"] {
 export def 'rpk consume' [topic:string@"rpk topic list"] {
     mut args = [exec -it redpanda]
     $args ++= [rpk topic consume $topic]
-    ^$env.CONTCTL ...$args
+    ^$env.CNTRCTL ...$args
 }
 
 export def 'rpk group list' [] {
     mut args = [exec -it redpanda]
     $args ++= [rpk group list]
-    ^$env.CONTCTL ...$args | from ssv
+    ^$env.CNTRCTL ...$args | from ssv
 }
 
 export def 'rpk group delete' [group:string@"rpk group list"] {
     mut args = [exec -it redpanda]
     $args ++= [rpk group delete $group]
-    ^$env.CONTCTL ...$args
+    ^$env.CNTRCTL ...$args
 }
 
 export def 'rpk topic list' [] {
@@ -96,13 +96,13 @@ export def 'rpk topic list' [] {
 export def 'rpk topic create' [name:string] {
     mut args = [exec -t redpanda]
     $args ++= [rpk topic create $name]
-    ^$env.CONTCTL ...$args
+    ^$env.CNTRCTL ...$args
 }
 
 export def 'rpk topic delete' [name:string@'rpk topic list'] {
     mut args = [exec -t redpanda]
     $args ++= [rpk topic delete $name]
-    ^$env.CONTCTL ...$args
+    ^$env.CNTRCTL ...$args
 }
 
 export def 'rpk up' [
@@ -148,9 +148,9 @@ export def 'rpk up' [
         --default-log-level=info
     ]
     if $dry_run {
-        print $"($env.CONTCTL) ($args | str join ' ')"
+        print $"($env.CNTRCTL) ($args | str join ' ')"
     } else {
-        ^$env.CONTCTL ...$args
+        ^$env.CNTRCTL ...$args
     }
 }
 
@@ -159,7 +159,7 @@ export def 'dev rpk' [--product --consume] {
     rpk up
 
     let readyness = {
-        ^$env.CONTCTL ...[
+        ^$env.CNTRCTL ...[
             exec redpanda
             rpk cluster info
         ]
