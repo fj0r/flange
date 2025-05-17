@@ -5,7 +5,7 @@
     "attrs": {
       "class": "maximize"
     },
-    "type": "box",
+    "type": "case",
     "children": [
       {
         "type": "text",
@@ -21,7 +21,7 @@
       {
         "type": "list",
         "attrs": {
-          "class": "card c as gap scrolly",
+          "class": "box c as gap scrolly",
           "scroll": true
         },
         "data": {
@@ -29,29 +29,29 @@
         },
         "item": [
           {
-            "type": "box",
+            "type": "case",
             "attrs": {
-              "class": "nogrow s ae accent card border shadow",
+              "class": "nogrow s ae accent box border shadow",
               "selector": "ask"
             }
           },
           {
-            "type": "box",
+            "type": "case",
             "attrs": {
-              "class": "nogrow s as card border shadow"
+              "class": "nogrow s as box border shadow"
             }
           }
         ]
       },
       {
-        "type": "box",
+        "type": "case",
         "attrs": {
-          "class": "nogrow card",
+          "class": "nogrow box",
           "horizontal": true
         },
         "children": [
           {
-            "type": "box",
+            "type": "case",
             "attrs": {
               "horizontal": true
             },
