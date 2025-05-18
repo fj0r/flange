@@ -1,7 +1,9 @@
+use crate::libs::webhooks::webhook_get;
+
 use super::message::{Event, Session};
-use super::settings::{AssetsList, WebhookMap};
+use super::settings::{AssetsList, AssetsVariant, WebhookMap};
 use super::template::Tmpls;
-use super::webhooks::handle_webhook;
+use super::webhooks::webhook_post;
 use anyhow::Ok as Okk;
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
@@ -11,8 +13,8 @@ use serde_json::{Value, from_str};
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::LazyLock;
-use tokio::sync::{RwLock, Mutex};
-use tokio::sync::mpsc::{UnboundedSender, UnboundedReceiver};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::{Mutex, RwLock};
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
@@ -52,17 +54,19 @@ pub async fn handle_ws<T>(
         if !g.enable {
             continue;
         }
-        let s = TMPL
-            .get_template(&g.path)
-            .unwrap()
-            .render(&context)
-            .unwrap();
-        let v: Value = from_str(&s).unwrap();
-        let msg: T = (Session::default(), v).into();
-        if let Ok(text) = serde_json::to_string(&msg) {
-            let _ = sender
-                .send(axum::extract::ws::Message::Text(text.into()))
-                .await;
+        let content = match &g.variant {
+            AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
+            wh @ AssetsVariant::Webhook { .. } => webhook_get(&wh, &context).await.ok(),
+        };
+        if let Some(c) = content {
+            if let Ok(v) = from_str(&c) {
+                let msg: T = (Session::default(), v).into();
+                if let Ok(text) = serde_json::to_string(&msg) {
+                    let _ = sender
+                        .send(axum::extract::ws::Message::Text(text.into()))
+                        .await;
+                }
+            }
         }
     }
 
@@ -96,7 +100,7 @@ pub async fn handle_ws<T>(
                     if let Some(wh) = whs.get(ev) {
                         if wh.enable {
                             is_webhook = true;
-                            if let Ok(r) = handle_webhook(wh, chat_msg.clone()).await {
+                            if let Ok(r) = webhook_post(wh, chat_msg.clone()).await {
                                 let _ = tx.send(r);
                             } else {
                                 let context = context! {

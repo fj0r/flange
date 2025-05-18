@@ -5,16 +5,48 @@ use figment::{
 use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watcher};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::{Arc, mpsc::channel};
 use std::path::Path;
+use std::sync::{Arc, mpsc::channel};
 use tokio::sync::Mutex;
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum AssetsVariant {
+    Path {
+        path: String,
+    },
+    Webhook {
+        endpoint: String,
+        #[serde(default = "default_accept")]
+        accept: String,
+    },
+}
+
+impl From<AssetsVariant> for Webhook {
+    fn from(value: AssetsVariant) -> Self {
+        if let AssetsVariant::Webhook { endpoint, accept } = value {
+            Self {
+                enable: true,
+                accept,
+                endpoint,
+            }
+        } else {
+            Self {
+                enable: false,
+                accept: default_accept(),
+                endpoint: "".to_string(),
+            }
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Assets {
     #[serde(default)]
     pub enable: bool,
-    pub path: String
+    #[serde(flatten)]
+    pub variant: AssetsVariant,
 }
 
 pub type AssetsList = Vec<Assets>;
