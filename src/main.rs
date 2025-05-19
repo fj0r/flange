@@ -24,16 +24,18 @@ async fn main() -> Result<()> {
     config.listen().await.unwrap();
     dbg!(&config.data);
 
-    let settings = Settings::new()?;
+    let settings = Arc::new(RwLock::new(Settings::new()?));
 
     //dbg!(&settings);
 
     let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
 
-    let event_tx = if settings.queue.enable {
-        let push_mq: KafkaManagerPush<Envelope> = match settings.queue.push.kind.as_str() {
+    let queue = settings.read().await.queue.clone();
+
+    let event_tx = if queue.enable {
+        let push_mq: KafkaManagerPush<Envelope> = match queue.push.kind.as_str() {
             "kafka" => {
-                let mut push_mq = KafkaManagerPush::new(settings.queue.push);
+                let mut push_mq = KafkaManagerPush::new(queue.push);
                 push_mq.run().await;
                 push_mq
             }
@@ -45,9 +47,9 @@ async fn main() -> Result<()> {
         };
         send_to_ws(mqrx, &shared).await;
 
-        match settings.queue.event.kind.as_str() {
+        match queue.event.kind.as_str() {
             "kafka" => {
-                let mut event_mq = KafkaManagerEvent::new(settings.queue.event);
+                let mut event_mq = KafkaManagerEvent::new(queue.event);
                 event_mq.run().await;
                 event_mq.get_tx()
             }
@@ -57,8 +59,6 @@ async fn main() -> Result<()> {
         None
     };
 
-    let webhooks = Arc::new(RwLock::new(settings.webhooks));
-    let greet = Arc::new(RwLock::new(settings.greet));
 
     let app = Router::new()
         .route(
@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
                  Query(q): Query<HashMap<String, String>>,
                  State(state): State<StateChat>| async move {
                     println!("{:?}", q);
-                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks, greet, q))
+                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, settings, q))
                 },
             ),
         )

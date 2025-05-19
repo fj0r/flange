@@ -70,7 +70,7 @@ pub struct QueueEvent {
     pub topic: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Queue {
     pub enable: bool,
@@ -82,7 +82,7 @@ fn default_accept() -> String {
     "application/json".to_owned()
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Webhook {
     pub enable: bool,
@@ -94,11 +94,19 @@ pub struct Webhook {
 pub type WebhookMap = HashMap<String, Webhook>;
 
 #[derive(Debug, Deserialize)]
+pub struct Login {
+    pub enable: bool,
+    pub endpoint: Option<String>
+}
+
+
+#[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub(crate) struct Settings {
     pub queue: Queue,
     pub webhooks: WebhookMap,
     pub greet: AssetsList,
+    pub login: Login,
 }
 
 impl Settings {

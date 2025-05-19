@@ -1,7 +1,7 @@
 use crate::libs::webhooks::greet_post;
 use std::collections::HashMap;
 use super::message::{Event, Session};
-use super::settings::{Assets, AssetsList, AssetsVariant, WebhookMap};
+use super::settings::{Assets, Settings, AssetsVariant};
 use super::template::Tmpls;
 use super::webhooks::webhook_post;
 use anyhow::Result;
@@ -54,8 +54,7 @@ pub async fn handle_ws<T>(
     socket: WebSocket,
     event_tx: Option<UnboundedSender<T>>,
     state: SharedState<UnboundedSender<T>>,
-    webhooks: Arc<RwLock<WebhookMap>>,
-    greet: Arc<RwLock<AssetsList>>,
+    settings: Arc<RwLock<Settings>>,
     query: HashMap<String, String>
 ) where
     T: Event
@@ -67,6 +66,7 @@ pub async fn handle_ws<T>(
         + Send
         + 'static,
 {
+    let settings = settings.read().await;
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
@@ -84,7 +84,7 @@ pub async fn handle_ws<T>(
 
     let context = context! { session_id => &sid };
 
-    for g in greet.read().await.iter() {
+    for g in settings.greet.iter() {
         if let Ok(text) = handle_greet::<T>(g, &context).await {
             let _ = sender
                 .send(axum::extract::ws::Message::Text(text.into()))
@@ -108,6 +108,7 @@ pub async fn handle_ws<T>(
     });
 
     let sid_cloned = sid.clone();
+    let webhooks = settings.webhooks.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
@@ -117,9 +118,8 @@ pub async fn handle_ws<T>(
 
             let mut is_webhook: bool = false;
             if let Some(ev) = chat_msg.event() {
-                let whs = webhooks.read().await;
-                if whs.contains_key(ev) {
-                    if let Some(wh) = whs.get(ev) {
+                if webhooks.contains_key(ev) {
+                    if let Some(wh) = webhooks.get(ev) {
                         if wh.enable {
                             is_webhook = true;
                             if let Ok(r) = webhook_post(wh, chat_msg.clone()).await {

@@ -12,6 +12,10 @@ broker = ['localhost:19092']
 topic = ['push']
 group = 'ws'
 
+[login]
+enable = false
+endpoint = 'http://localhost:3000/admin/login'
+
 [webhooks.history]
 enable = false
 endpoint = 'http://localhost:8000/v1/history'
