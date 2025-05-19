@@ -1,10 +1,11 @@
 use crate::libs::webhooks::webhook_get;
 
 use super::message::{Event, Session};
-use super::settings::{AssetsList, AssetsVariant, WebhookMap};
+use super::settings::{Assets, AssetsList, AssetsVariant, WebhookMap};
 use super::template::Tmpls;
 use super::webhooks::webhook_post;
-use anyhow::Ok as Okk;
+use anyhow::Result;
+use anyhow::{Context, Ok as Okk};
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use minijinja::context;
@@ -15,6 +16,39 @@ use std::sync::Arc;
 use std::sync::LazyLock;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::{Mutex, RwLock};
+
+/* TODO:
+use std::async_iter;
+
+struct GreetIter<'a> {
+    index: usize,
+    greet: &'a AssetsList,
+    context: &'a minijinja::Value,
+}
+
+impl<'a> AsyncIterator for GreetIter<'a> {
+}
+*/
+
+static TMPL: LazyLock<Tmpls> = LazyLock::new(|| Tmpls::new("assets").unwrap());
+
+async fn handle_greet<T>(asset: &Assets, context: &minijinja::Value) -> Result<String>
+where
+    T: Event
+        + Serialize
+        + From<(Session, Value)>
+{
+    if !asset.enable {
+        return Ok("disabled".into());
+    }
+    let content = match &asset.variant {
+        AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
+        wh @ AssetsVariant::Webhook { .. } => webhook_get(&wh, context).await.ok(),
+    };
+    let v = from_str(&content.context("not a webhook")?)?;
+    let msg: T = (Session::default(), v).into();
+    Ok(serde_json::to_string(&msg)?)
+}
 
 pub async fn handle_ws<T>(
     socket: WebSocket,
@@ -48,25 +82,12 @@ pub async fn handle_ws<T>(
     tracing::info!("Connection opened for {}", &sid);
 
     let context = context! { session_id => &sid };
-    static TMPL: LazyLock<Tmpls> = LazyLock::new(|| Tmpls::new("assets").unwrap());
 
     for g in greet.iter() {
-        if !g.enable {
-            continue;
-        }
-        let content = match &g.variant {
-            AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
-            wh @ AssetsVariant::Webhook { .. } => webhook_get(&wh, &context).await.ok(),
-        };
-        if let Some(c) = content {
-            if let Ok(v) = from_str(&c) {
-                let msg: T = (Session::default(), v).into();
-                if let Ok(text) = serde_json::to_string(&msg) {
-                    let _ = sender
-                        .send(axum::extract::ws::Message::Text(text.into()))
-                        .await;
-                }
-            }
+        if let Ok(text) = handle_greet::<T>(g, &context).await {
+            let _ = sender
+                .send(axum::extract::ws::Message::Text(text.into()))
+                .await;
         }
     }
 
