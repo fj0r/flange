@@ -26,13 +26,9 @@ path = 'user.json'
 
 [[greet]]
 enable = true
-path = 'layout.json'
+endpoint = 'http://localhost:3000/admin/render/layout.json'
 
 [[greet]]
 enable = true
 path = 'ai.tmpl.json'
 
-
-[[greet]]
-enable = true
-endpoint = 'http://localhost:3000/admin/echo'
