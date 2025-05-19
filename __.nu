@@ -24,7 +24,7 @@ export def send [
 ] {
     let c = open $CFG
     let d = open ([$WORKDIR data message $file] | path join)
-    let host = $"http://($c.server.host)/admin/message"
+    let host = $"http://($c.server.host)/admin/send"
     let data = $d | merge deep $patch
     print $"(ansi grey)($data | to yaml)(ansi reset)"
     http post --content-type application/json $host $data

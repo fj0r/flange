@@ -1,4 +1,4 @@
-use crate::libs::webhooks::webhook_get;
+use crate::libs::webhooks::greet_post;
 
 use super::message::{Event, Session};
 use super::settings::{Assets, AssetsList, AssetsVariant, WebhookMap};
@@ -43,7 +43,7 @@ where
     }
     let content = match &asset.variant {
         AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
-        wh @ AssetsVariant::Webhook { .. } => webhook_get(&wh, context).await.ok(),
+        wh @ AssetsVariant::Webhook { .. } => greet_post(&wh, context).await.ok(),
     };
     let v = from_str(&content.context("not a webhook")?)?;
     let msg: T = (Session::default(), v).into();

@@ -1,13 +1,17 @@
 use axum::{
     Router,
-    extract::{Json, Request, State},
+    extract::{Json, Path, Request, State},
     http::{StatusCode, header::ACCEPT},
     response::{IntoResponse, Response},
     routing::{get, post},
 };
 
 use super::error::AppError;
-use super::{message::{Envelope, Session}, shared::StateChat};
+use super::{
+    message::{Envelope, Session},
+    shared::StateChat,
+};
+use minijinja::Environment;
 use serde_json::{Value, from_str};
 
 async fn send(
@@ -50,6 +54,16 @@ impl std::fmt::Display for Req<'_> {
     }
 }
 
+
+async fn render(Path(name): Path<String>, Json(payload): Json<Value>) -> Result<Response, AppError> {
+    let mut env = Environment::new();
+    let path = std::path::Path::new("assets");
+    let content = async_fs::read_to_string(path.join(&name)).await?;
+    let _ = env.add_template_owned(&name, content);
+    let r = env.get_template(&name)?.render(payload)?;
+    Ok(Response::new(r.into()))
+}
+
 async fn echo(req: Request) -> Result<Response, AppError> {
     println!("{}", Req(&req));
     match req.headers().get(ACCEPT).map(|x| x.as_bytes()) {
@@ -67,6 +81,7 @@ async fn echo(req: Request) -> Result<Response, AppError> {
 pub fn admin_router() -> Router<StateChat> {
     Router::new()
         .route("/users", get(list))
-        .route("/message", post(send))
+        .route("/send", post(send))
+        .route("/render/{name}", post(render))
         .route("/echo", post(echo))
 }
