@@ -7,7 +7,7 @@ mod libs;
 use anyhow::{Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
-use libs::admin::admin_router;
+use libs::admin::{admin_router, debug_router};
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::{Config, Settings};
 use libs::shared::{StateChat, Sender};
@@ -71,6 +71,7 @@ async fn main() -> Result<()> {
             ),
         )
         .nest("/admin", admin_router())
+        .nest("/debug", debug_router())
         .with_state(shared);
 
     let addr = "0.0.0.0:3000";

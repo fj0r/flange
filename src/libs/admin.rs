@@ -54,6 +54,12 @@ impl std::fmt::Display for Req<'_> {
     }
 }
 
+pub fn admin_router() -> Router<StateChat<Sender>> {
+    Router::new()
+        .route("/users", get(list))
+        .route("/send", post(send))
+}
+
 async fn render(
     Path(name): Path<String>,
     Json(payload): Json<Value>,
@@ -80,10 +86,8 @@ async fn echo(req: Request) -> Result<Response, AppError> {
     }
 }
 
-pub fn admin_router() -> Router<StateChat<Sender>> {
+pub fn debug_router() -> Router<StateChat<Sender>> {
     Router::new()
-        .route("/users", get(list))
-        .route("/send", post(send))
-        .route("/debug/render/{name}", post(render))
-        .route("/debug/echo", post(echo))
+        .route("/render/{name}", post(render))
+        .route("/echo", post(echo))
 }
