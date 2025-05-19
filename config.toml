@@ -13,7 +13,7 @@ topic = ['push']
 group = 'ws'
 
 [login]
-enable = false
+enable = true
 endpoint = 'http://localhost:3000/debug/login'
 
 [webhooks.history]

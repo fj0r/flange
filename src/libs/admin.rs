@@ -5,6 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
+use serde::Serialize;
 use super::error::AppError;
 use super::{
     message::Envelope,
@@ -37,9 +38,22 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<Session>> {
+
+#[derive(Debug, Serialize)]
+pub struct UserLine {
+    id: Session,
+    info: Info
+}
+
+async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<UserLine>> {
     let s = state.read().await;
-    Json(s.session.keys().cloned().collect::<Vec<Session>>())
+    let mut r = Vec::new();
+    for (k, v) in &s.session {
+        r .push(UserLine {
+            id: k.clone(), info: v.info.clone()
+        });
+    }
+    Json(r)
 }
 
 struct Req<'a>(&'a Request);
@@ -89,7 +103,7 @@ async fn login(
     State(_state): State<StateChat<Sender>>,
     Json(payload): Json<Map<String, Value>>,
 ) -> Result<Json<(Session, Info)>, AppError> {
-    Ok(Json(("debug_login".into(), Some(payload))))
+    Ok(Json(("debug".into(), Some(payload))))
 }
 
 pub fn debug_router() -> Router<StateChat<Sender>> {
