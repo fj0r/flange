@@ -13,17 +13,26 @@ where
     r.json::<T>().await
 }
 
-pub async fn webhook_get(wh: &AssetsVariant, msg: &Value) -> Result<String, Error> {
+#[derive(thiserror::Error, Debug)]
+pub enum GreetError {
+    #[error("reqwest error")]
+    Reqwest(#[from] Error),
+    #[error("not a webhook")]
+    NotWebhook
+}
+
+pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, GreetError> {
     let client = reqwest::Client::new();
-    if let AssetsVariant::Webhook {
-        endpoint,
-        accept: _,
-    } = wh
-    {
-        let r = client.get(endpoint).json(&msg).send().await?;
-        r.text().await
-    } else {
-        // TODO: reqwest Error
-        Ok("{}".to_string())
+    match wh {
+        AssetsVariant::Webhook {
+            endpoint,
+            accept: _,
+        } => {
+            let r = client.post(endpoint).json(&msg).send().await?;
+            Ok(r.text().await?)
+        }
+        _ => {
+            Err(GreetError::NotWebhook)
+        }
     }
 }
