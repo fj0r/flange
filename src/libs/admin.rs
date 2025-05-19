@@ -5,14 +5,13 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-
 use super::error::AppError;
 use super::{
     message::Envelope,
-    shared::{Sender, StateChat, Session},
+    shared::{Info, Sender, Session, StateChat},
 };
 use minijinja::Environment;
-use serde_json::{Value, from_str};
+use serde_json::{Map, Value, from_str};
 
 async fn send(
     State(state): State<StateChat<Sender>>,
@@ -86,8 +85,16 @@ async fn echo(req: Request) -> Result<Response, AppError> {
     }
 }
 
+async fn login(
+    State(_state): State<StateChat<Sender>>,
+    Json(payload): Json<Map<String, Value>>,
+) -> Result<Json<(Session, Info)>, AppError> {
+    Ok(Json(("debug_login".into(), Some(payload))))
+}
+
 pub fn debug_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/render/{name}", post(render))
+        .route("/login", post(login))
         .route("/echo", post(echo))
 }

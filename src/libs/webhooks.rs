@@ -1,4 +1,4 @@
-use super::settings::{AssetsVariant, Settings, Webhook};
+use super::settings::{AssetsVariant, Webhook};
 use super::shared::{Info, Session};
 use minijinja::Value;
 use reqwest::Error;

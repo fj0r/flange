@@ -2,7 +2,7 @@ use super::message::ChatMessage;
 use std::{collections::HashMap, ops::Deref};
 use std::sync::Arc;
 use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
-use serde_json::Value;
+use serde_json::{Value, Map};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
@@ -11,6 +11,12 @@ pub type SessionId = String;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
 pub struct Session(pub SessionId);
+
+impl From<&str> for Session {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
 
 impl From<SessionCount> for Session {
     fn from(value: SessionCount) -> Self {
@@ -64,7 +70,7 @@ impl<T> Shared<T> {
     }
 }
 
-pub type Info = Option<HashMap<String, Value>>;
+pub type Info = Option<Map<String, Value>>;
 
 #[derive(Debug, Clone)]
 pub struct Client<T> {
