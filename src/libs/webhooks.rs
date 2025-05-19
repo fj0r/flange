@@ -36,3 +36,19 @@ pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, Greet
         }
     }
 }
+
+pub async fn login_post(wh: &AssetsVariant, msg: &Value) -> Result<String, GreetError> {
+    let client = reqwest::Client::new();
+    match wh {
+        AssetsVariant::Webhook {
+            endpoint,
+            accept: _,
+        } => {
+            let r = client.post(endpoint).json(&msg).send().await?;
+            Ok(r.text().await?)
+        }
+        _ => {
+            Err(GreetError::NotWebhook)
+        }
+    }
+}

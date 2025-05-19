@@ -1,7 +1,7 @@
+use super::shared::Session;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fmt::{Debug, Display};
-use std::ops::Deref;
+use std::fmt::Debug;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use time::serde::rfc3339;
@@ -15,43 +15,14 @@ pub trait Event {
     fn set_time(&mut self, time: Created);
 }
 
-
 fn get_value_event(v: &Value) -> Option<&str> {
     if v.is_object() {
         if let Some(m) = v.as_object() {
-            let r = m
-                .get("event")
-                .and_then(|x| x.as_str());
+            let r = m.get("event").and_then(|x| x.as_str());
             return r;
         };
     };
     None
-}
-
-
-pub type SessionCount = u128;
-pub type SessionId = String;
-
-#[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
-pub struct Session(pub SessionId);
-
-impl From<SessionCount> for Session {
-    fn from(value: SessionCount) -> Self {
-        Self(value.to_string())
-    }
-}
-
-impl Display for Session {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
-}
-
-impl Deref for Session {
-    type Target = SessionId;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -59,7 +30,7 @@ pub struct Created(#[serde(with = "rfc3339")] pub OffsetDateTime);
 
 impl Default for Created {
     fn default() -> Self {
-        Self (OffsetDateTime::now_utc())
+        Self(OffsetDateTime::now_utc())
     }
 }
 
@@ -85,7 +56,6 @@ pub struct ChatMessage {
     pub created: Option<Created>,
     pub content: Value,
 }
-
 
 impl From<(Session, Value)> for ChatMessage {
     fn from(value: (Session, Value)) -> Self {

@@ -1,20 +1,33 @@
-use super::message::{ChatMessage, Session, SessionCount};
-use std::collections::HashMap;
+use super::message::ChatMessage;
+use std::{collections::HashMap, ops::Deref};
 use std::sync::Arc;
 use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
+use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display};
 
-#[derive(Debug, Clone)]
-pub struct Shared<T> {
-    pub sender: HashMap<Session, T>,
-    pub count: SessionCount,
+pub type SessionCount = u128;
+pub type SessionId = String;
+
+#[derive(Clone, Debug, Deserialize, Serialize, Default, PartialEq, Eq, Hash)]
+pub struct Session(pub SessionId);
+
+impl From<SessionCount> for Session {
+    fn from(value: SessionCount) -> Self {
+        Self(value.to_string())
+    }
 }
 
-impl<T> Shared<T> {
-    pub fn new() -> Self {
-        Shared {
-            sender: HashMap::new(),
-            count: SessionCount::default(),
-        }
+impl Display for Session {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl Deref for Session {
+    type Target = SessionId;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -36,5 +49,36 @@ impl<T> SharedState<T> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Shared<T> {
+    pub session: HashMap<Session, T>,
+    pub count: SessionCount,
+}
 
-pub type StateChat = SharedState<UnboundedSender<ChatMessage>>;
+impl<T> Shared<T> {
+    pub fn new() -> Self {
+        Shared {
+            session: HashMap::new(),
+            count: SessionCount::default(),
+        }
+    }
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct Client<T> {
+    pub sender: T,
+    pub info: Option<HashMap<String, Value>>
+}
+
+impl<T> Deref for Client<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.sender
+    }
+}
+
+pub type Sender = UnboundedSender<ChatMessage>;
+
+pub type StateChat<T> = SharedState<Client<T>>;

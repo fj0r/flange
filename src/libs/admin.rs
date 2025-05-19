@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    extract::{Json, Path, Request, State, Query},
+    extract::{Json, Path, Request, State},
     http::{StatusCode, header::ACCEPT},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -8,28 +8,27 @@ use axum::{
 
 use super::error::AppError;
 use super::{
-    message::{Envelope, Session},
-    shared::StateChat,
+    message::Envelope,
+    shared::{Sender, StateChat, Session},
 };
 use minijinja::Environment;
 use serde_json::{Value, from_str};
-use std::collections::HashMap;
 
 async fn send(
-    State(state): State<StateChat>,
+    State(state): State<StateChat<Sender>>,
     Json(payload): Json<Envelope>,
 ) -> Result<(StatusCode, Json<Vec<Session>>), AppError> {
     let mut succ: Vec<Session> = Vec::new();
     let s = state.read().await;
     if payload.receiver.is_empty() {
-        for (n, c) in s.sender.iter() {
+        for (n, c) in s.session.iter() {
             let _ = c.send(payload.message.clone());
             succ.push(n.to_owned());
         }
     } else {
         for r in payload.receiver {
-            if s.sender.contains_key(&r) {
-                if let Some(x) = s.sender.get(&r) {
+            if s.session.contains_key(&r) {
+                if let Some(x) = s.session.get(&r) {
                     let _ = x.send(payload.message.clone());
                     succ.push(r);
                 }
@@ -39,9 +38,9 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-async fn list(State(state): State<StateChat>) -> axum::Json<Vec<Session>> {
+async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<Session>> {
     let s = state.read().await;
-    Json(s.sender.keys().cloned().collect::<Vec<Session>>())
+    Json(s.session.keys().cloned().collect::<Vec<Session>>())
 }
 
 struct Req<'a>(&'a Request);
@@ -55,8 +54,10 @@ impl std::fmt::Display for Req<'_> {
     }
 }
 
-
-async fn render(Path(name): Path<String>, Json(payload): Json<Value>) -> Result<Response, AppError> {
+async fn render(
+    Path(name): Path<String>,
+    Json(payload): Json<Value>,
+) -> Result<Response, AppError> {
     let mut env = Environment::new();
     let path = std::path::Path::new("assets");
     let content = async_fs::read_to_string(path.join(&name)).await?;
@@ -79,7 +80,7 @@ async fn echo(req: Request) -> Result<Response, AppError> {
     }
 }
 
-pub fn admin_router() -> Router<StateChat> {
+pub fn admin_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/users", get(list))
         .route("/send", post(send))

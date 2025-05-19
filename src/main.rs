@@ -1,5 +1,5 @@
 use axum::{Router, extract::Query, routing::get};
-use libs::message::{ChatMessage, Envelope, MessageQueueEvent, MessageQueuePush};
+use libs::message::{Envelope, MessageQueueEvent, MessageQueuePush};
 use std::collections::HashMap;
 use tracing::info;
 use tracing_subscriber;
@@ -10,11 +10,10 @@ use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::admin_router;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::{Config, Settings};
-use libs::shared::{SharedState, StateChat};
+use libs::shared::{StateChat, Sender};
 use libs::websocket::{handle_ws, send_to_ws};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::sync::mpsc::UnboundedSender;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +27,7 @@ async fn main() -> Result<()> {
 
     //dbg!(&settings);
 
-    let shared = SharedState::<UnboundedSender<ChatMessage>>::new();
+    let shared = StateChat::<Sender>::new();
 
     let queue = settings.read().await.queue.clone();
 
@@ -66,7 +65,7 @@ async fn main() -> Result<()> {
             get(
                 |ws: WebSocketUpgrade,
                  Query(q): Query<HashMap<String, String>>,
-                 State(state): State<StateChat>| async move {
+                 State(state): State<StateChat<Sender>>| async move {
                     println!("{:?}", q);
                     ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, settings, q))
                 },

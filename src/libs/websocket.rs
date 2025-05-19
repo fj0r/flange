@@ -1,9 +1,9 @@
-use crate::libs::webhooks::greet_post;
-use std::collections::HashMap;
-use super::message::{Event, Session};
-use super::settings::{Assets, Settings, AssetsVariant};
+use super::message::Event;
+use super::settings::{Assets, AssetsVariant, Settings};
+use super::shared::{StateChat, Session};
 use super::template::Tmpls;
 use super::webhooks::webhook_post;
+use crate::libs::webhooks::greet_post;
 use anyhow::Result;
 use anyhow::{Context, Ok as Okk};
 use axum::extract::ws::WebSocket;
@@ -11,6 +11,7 @@ use futures::{sink::SinkExt, stream::StreamExt};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, from_str};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::LazyLock;
@@ -34,9 +35,7 @@ static TMPL: LazyLock<Tmpls> = LazyLock::new(|| Tmpls::new("assets").unwrap());
 
 async fn handle_greet<T>(asset: &Assets, context: &minijinja::Value) -> Result<String>
 where
-    T: Event
-        + Serialize
-        + From<(Session, Value)>
+    T: Event + Serialize + From<(Session, Value)>,
 {
     if !asset.enable {
         return Ok("disabled".into());
@@ -53,9 +52,9 @@ where
 pub async fn handle_ws<T>(
     socket: WebSocket,
     event_tx: Option<UnboundedSender<T>>,
-    state: SharedState<UnboundedSender<T>>,
+    state: StateChat<UnboundedSender<T>>,
     settings: Arc<RwLock<Settings>>,
-    query: HashMap<String, String>
+    query: HashMap<String, String>,
 ) where
     T: Event
         + for<'a> Deserialize<'a>
@@ -77,7 +76,13 @@ pub async fn handle_ws<T>(
         let mut s = s1.write().await;
         s.count += 1;
         sid = s.count.into();
-        s.sender.insert(sid.clone(), tx.clone());
+        s.session.insert(
+            sid.clone(),
+            super::shared::Client {
+                sender: tx.clone(),
+                info: None,
+            },
+        );
     }
 
     tracing::info!("Connection opened for {}", &sid);
@@ -160,7 +165,7 @@ pub async fn handle_ws<T>(
 
     tracing::info!("Connection closed for {}", &sid);
     let mut s = state.write().await;
-    s.sender.remove(&sid);
+    s.session.remove(&sid);
 }
 
 #[allow(unused)]
@@ -170,11 +175,10 @@ trait Client {
 }
 
 use super::message::{ChatMessage, Envelope};
-use super::shared::SharedState;
 
 pub async fn send_to_ws(
     mqrx: Arc<Mutex<UnboundedReceiver<Envelope>>>,
-    shared: &SharedState<UnboundedSender<ChatMessage>>,
+    shared: &StateChat<UnboundedSender<ChatMessage>>,
 ) {
     let shared = shared.clone();
     tokio::spawn(async move {
@@ -184,8 +188,8 @@ pub async fn send_to_ws(
             if !x.receiver.is_empty() {
                 let s = shared.read().await;
                 for r in x.receiver {
-                    if s.sender.contains_key(&r) {
-                        let s = s.sender.get(&r)?;
+                    if s.session.contains_key(&r) {
+                        let s = s.session.get(&r)?;
                         let _ = s.send(x.message.clone());
                     }
                 }
