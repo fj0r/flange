@@ -66,7 +66,6 @@ async fn main() -> Result<()> {
                 |ws: WebSocketUpgrade,
                  Query(q): Query<HashMap<String, String>>,
                  State(state): State<StateChat<Sender>>| async move {
-                    println!("{:?}", q);
                     ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, settings, q))
                 },
             ),

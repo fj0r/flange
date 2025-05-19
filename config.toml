@@ -20,7 +20,7 @@ endpoint = 'http://localhost:3000/admin/login'
 enable = false
 endpoint = 'http://localhost:8000/v1/history'
 
-[webhooks.x]
+[webhooks.echo]
 enable = true
 endpoint = 'http://localhost:3000/admin/echo'
 
