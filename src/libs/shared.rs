@@ -64,12 +64,12 @@ impl<T> Shared<T> {
     }
 }
 
-
+pub type Info = Option<HashMap<String, Value>>;
 
 #[derive(Debug, Clone)]
 pub struct Client<T> {
     pub sender: T,
-    pub info: Option<HashMap<String, Value>>
+    pub info: Info
 }
 
 impl<T> Deref for Client<T> {

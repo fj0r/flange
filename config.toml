@@ -14,7 +14,7 @@ group = 'ws'
 
 [login]
 enable = false
-endpoint = 'http://localhost:3000/admin/login'
+endpoint = 'http://localhost:3000/debug/login'
 
 [webhooks.history]
 enable = false
@@ -22,7 +22,7 @@ endpoint = 'http://localhost:8000/v1/history'
 
 [webhooks.echo]
 enable = true
-endpoint = 'http://localhost:3000/admin/echo'
+endpoint = 'http://localhost:3000/debug/echo'
 
 [[greet]]
 enable = true
@@ -30,7 +30,7 @@ path = 'user.json'
 
 [[greet]]
 enable = true
-endpoint = 'http://localhost:3000/admin/render/layout.json'
+endpoint = 'http://localhost:3000/debug/render/layout.json'
 
 [[greet]]
 enable = true

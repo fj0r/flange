@@ -1,7 +1,9 @@
-use super::settings::{AssetsVariant, Webhook};
+use super::settings::{AssetsVariant, Settings, Webhook};
+use super::shared::{Info, Session};
 use minijinja::Value;
 use reqwest::Error;
 use serde::{Serialize, de::DeserializeOwned};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 pub async fn webhook_post<T>(wh: &Webhook, msg: T) -> Result<T, Error>
@@ -18,7 +20,7 @@ pub enum GreetError {
     #[error("reqwest error")]
     Reqwest(#[from] Error),
     #[error("not a webhook")]
-    NotWebhook
+    NotWebhook,
 }
 
 pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, GreetError> {
@@ -31,24 +33,15 @@ pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, Greet
             let r = client.post(endpoint).json(&msg).send().await?;
             Ok(r.text().await?)
         }
-        _ => {
-            Err(GreetError::NotWebhook)
-        }
+        _ => Err(GreetError::NotWebhook),
     }
 }
 
-pub async fn login_post(wh: &AssetsVariant, msg: &Value) -> Result<String, GreetError> {
+pub async fn login_post(
+    url: impl AsRef<str>,
+    query: &HashMap<String, String>,
+) -> Result<(Session, Info), GreetError> {
     let client = reqwest::Client::new();
-    match wh {
-        AssetsVariant::Webhook {
-            endpoint,
-            accept: _,
-        } => {
-            let r = client.post(endpoint).json(&msg).send().await?;
-            Ok(r.text().await?)
-        }
-        _ => {
-            Err(GreetError::NotWebhook)
-        }
-    }
+    let r = client.post(url.as_ref()).json(query).send().await?;
+    Ok(r.json::<(Session, Info)>().await?)
 }

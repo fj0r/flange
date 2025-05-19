@@ -1,9 +1,8 @@
 use super::message::Event;
 use super::settings::{Assets, AssetsVariant, Settings};
-use super::shared::{StateChat, Session};
+use super::shared::{Info, Session, StateChat};
 use super::template::Tmpls;
-use super::webhooks::webhook_post;
-use crate::libs::webhooks::greet_post;
+use super::webhooks::{greet_post, login_post, webhook_post};
 use anyhow::Result;
 use anyhow::{Context, Ok as Okk};
 use axum::extract::ws::WebSocket;
@@ -49,6 +48,18 @@ where
     Ok(serde_json::to_string(&msg)?)
 }
 
+async fn handle_login(
+    settings: &Settings,
+    query: &HashMap<String, String>,
+) -> Option<(Session, Info)> {
+    if settings.login.enable {
+        let endpoint = &settings.login.endpoint.clone()?;
+        let r = login_post(endpoint, query).await.ok()?;
+        return Some((r.0.into(), r.1));
+    }
+    None
+}
+
 pub async fn handle_ws<T>(
     socket: WebSocket,
     event_tx: Option<UnboundedSender<T>>,
@@ -71,9 +82,18 @@ pub async fn handle_ws<T>(
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
     let sid: Session;
 
-    {
-        let s1 = state.clone();
-        let mut s = s1.write().await;
+    if let Some((s, info)) = handle_login(&settings, &query).await {
+        sid = s;
+        let mut s = state.write().await;
+        s.session.insert(
+            sid.clone(),
+            super::shared::Client {
+                sender: tx.clone(),
+                info,
+            },
+        );
+    } else {
+        let mut s = state.write().await;
         s.count += 1;
         sid = s.count.into();
         s.session.insert(

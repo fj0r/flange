@@ -84,6 +84,6 @@ pub fn admin_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/users", get(list))
         .route("/send", post(send))
-        .route("/render/{name}", post(render))
-        .route("/echo", post(echo))
+        .route("/debug/render/{name}", post(render))
+        .route("/debug/echo", post(echo))
 }
