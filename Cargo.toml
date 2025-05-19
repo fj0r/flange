@@ -24,4 +24,5 @@ minijinja = { version = "2.10.2", features = ["loader"] }
 time = { version = "0.3.41", features = ["formatting", "parsing", "serde"] }
 thiserror = "2.0.12"
 async-fs = "2.1.2"
+short-uuid = "0.2.0"
 

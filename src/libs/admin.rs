@@ -103,7 +103,9 @@ async fn login(
     State(_state): State<StateChat<Sender>>,
     Json(payload): Json<Map<String, Value>>,
 ) -> Result<Json<(Session, Info)>, AppError> {
-    Ok(Json(("debug".into(), Some(payload))))
+    use short_uuid::ShortUuid;
+    let uuid = ShortUuid::generate().to_string();
+    Ok(Json((uuid.as_str().into(), Some(payload))))
 }
 
 pub fn debug_router() -> Router<StateChat<Sender>> {
