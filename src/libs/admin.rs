@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    extract::{Json, Path, Request, State},
+    extract::{Json, Path, Request, State, Query},
     http::{StatusCode, header::ACCEPT},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -13,6 +13,7 @@ use super::{
 };
 use minijinja::Environment;
 use serde_json::{Value, from_str};
+use std::collections::HashMap;
 
 async fn send(
     State(state): State<StateChat>,

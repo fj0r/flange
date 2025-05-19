@@ -1,5 +1,6 @@
-use axum::{Router, routing::get};
+use axum::{Router, extract::Query, routing::get};
 use libs::message::{ChatMessage, Envelope, MessageQueueEvent, MessageQueuePush};
+use std::collections::HashMap;
 use tracing::info;
 use tracing_subscriber;
 mod libs;
@@ -57,14 +58,17 @@ async fn main() -> Result<()> {
     };
 
     let webhooks = Arc::new(RwLock::new(settings.webhooks));
-    let greet = settings.greet;
+    let greet = Arc::new(RwLock::new(settings.greet));
 
     let app = Router::new()
         .route(
             "/channel",
             get(
-                |ws: WebSocketUpgrade, State(state): State<StateChat>| async move {
-                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks, greet))
+                |ws: WebSocketUpgrade,
+                 Query(q): Query<HashMap<String, String>>,
+                 State(state): State<StateChat>| async move {
+                    println!("{:?}", q);
+                    ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, webhooks, greet, q))
                 },
             ),
         )

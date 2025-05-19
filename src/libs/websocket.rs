@@ -1,5 +1,5 @@
 use crate::libs::webhooks::greet_post;
-
+use std::collections::HashMap;
 use super::message::{Event, Session};
 use super::settings::{Assets, AssetsList, AssetsVariant, WebhookMap};
 use super::template::Tmpls;
@@ -55,7 +55,8 @@ pub async fn handle_ws<T>(
     event_tx: Option<UnboundedSender<T>>,
     state: SharedState<UnboundedSender<T>>,
     webhooks: Arc<RwLock<WebhookMap>>,
-    greet: AssetsList,
+    greet: Arc<RwLock<AssetsList>>,
+    query: HashMap<String, String>
 ) where
     T: Event
         + for<'a> Deserialize<'a>
@@ -83,7 +84,7 @@ pub async fn handle_ws<T>(
 
     let context = context! { session_id => &sid };
 
-    for g in greet.iter() {
+    for g in greet.read().await.iter() {
         if let Ok(text) = handle_greet::<T>(g, &context).await {
             let _ = sender
                 .send(axum::extract::ws::Message::Text(text.into()))
