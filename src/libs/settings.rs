@@ -96,7 +96,8 @@ pub type WebhookMap = HashMap<String, Webhook>;
 #[derive(Debug, Deserialize)]
 pub struct Login {
     pub enable: bool,
-    pub endpoint: Option<String>
+    pub endpoint: Option<String>,
+    pub event: Option<String>,
 }
 
 
@@ -133,7 +134,7 @@ impl Config {
     pub async fn listen(&mut self) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let (tx, rx) = channel::<ResultN<Event>>();
         let mut watcher = recommended_watcher(tx)?;
-        watcher.watch(Path::new("./config.toml"), RecursiveMode::Recursive)?;
+        watcher.watch(Path::new("config.toml"), RecursiveMode::Recursive)?;
         let d = self.data.clone();
         tokio::task::spawn_blocking(|| async move {
             for res in rx {

@@ -9,12 +9,14 @@
 - [x] webhook
     - [x] receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
     - [x] event map
-    - [ ] history srv
+    - [ ] ~history srv~
     - [ ] hot reload config
-- [ ] topic/channel/chatroom
+- [ ] ~topic/channel/chatroom~ (client/controller)
 - [x] top event (unachievable)
 - [x] greet
     - [x] init ui
     - [x] template
     - [x] webhook
 - [x] auth/login
+    - [x] webhook
+    - [ ] event (replace session)
