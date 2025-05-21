@@ -1,16 +1,19 @@
-use axum::{Router, extract::Query, routing::get};
+use axum::{
+    Router,
+    extract::{Query, State, ws::WebSocketUpgrade},
+    routing::get,
+};
 use libs::message::{Envelope, MessageQueueEvent, MessageQueuePush};
 use std::collections::HashMap;
+use tower_http::services::ServeDir;
 use tracing::info;
 use tracing_subscriber;
 mod libs;
 use anyhow::{Ok, Result};
-use axum::extract::State;
-use axum::extract::ws::WebSocketUpgrade;
 use libs::admin::*;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::{Config, Settings};
-use libs::shared::{StateChat, Sender};
+use libs::shared::{Sender, StateChat};
 use libs::websocket::{handle_ws, send_to_ws};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -59,7 +62,6 @@ async fn main() -> Result<()> {
         None
     };
 
-
     let app = Router::new()
         .route(
             "/channel",
@@ -74,6 +76,7 @@ async fn main() -> Result<()> {
         .nest("/admin", admin_router())
         .nest("/config", config_router())
         .nest("/debug", debug_router())
+        .fallback_service(ServeDir::new("./static"))
         .with_state(shared);
 
     let addr = "0.0.0.0:3000";
