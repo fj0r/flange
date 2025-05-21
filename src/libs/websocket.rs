@@ -134,6 +134,8 @@ pub async fn handle_ws<T>(
 
     let sid_cloned = sid.clone();
     let webhooks = settings.webhooks.clone();
+    // release lock
+    drop(settings);
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
