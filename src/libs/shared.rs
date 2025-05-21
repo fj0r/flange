@@ -1,11 +1,15 @@
 use super::message::ChatMessage;
 use super::settings::Settings;
-use std::{collections::HashMap, ops::Deref};
-use std::sync::Arc;
-use tokio::sync::{mpsc::UnboundedSender, Mutex, RwLock, MutexGuard};
-use serde_json::{Value, Map};
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::fmt::{Debug, Display};
+use std::ops::DerefMut;
+use std::sync::Arc;
+use std::{
+    collections::{HashMap, hash_map::Iter},
+    ops::Deref,
+};
+use tokio::sync::{Mutex, MutexGuard, RwLock, mpsc::UnboundedSender};
 
 pub type SessionCount = u128;
 pub type SessionId = String;
@@ -38,9 +42,53 @@ impl Deref for Session {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct SessionManager<T> {
+    map: HashMap<Session, T>,
+}
+
+impl<T> Deref for SessionManager<T> {
+    type Target = HashMap<Session, T>;
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+
+impl<T> DerefMut for SessionManager<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.map
+    }
+}
+
+
+impl<'a, T> IntoIterator for &'a SessionManager<T> {
+    type Item = (&'a Session, &'a T);
+    type IntoIter = Iter<'a, Session, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.iter()
+    }
+}
+
+impl<T> SessionManager<T> {
+    fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
+
+    // TODO:
+    fn insert(&mut self, k: Session, v: T) -> Option<T> {
+        self.map.insert(k, v)
+    }
+
+    // TODO:
+    fn remove(&mut self, k: &Session) -> Option<T> {
+        self.map.remove(k)
+    }
+}
 
 #[derive(Debug, Clone)]
-pub struct SharedState<T> (Arc<Mutex<Shared<T>>>);
+pub struct SharedState<T>(Arc<Mutex<Shared<T>>>);
 
 impl<T> SharedState<T> {
     pub fn new(settings: Arc<RwLock<Settings>>) -> Self {
@@ -58,7 +106,7 @@ impl<T> SharedState<T> {
 
 #[derive(Debug, Clone)]
 pub struct Shared<T> {
-    pub session: HashMap<Session, T>,
+    pub session: SessionManager<T>,
     pub count: SessionCount,
     pub settings: Arc<RwLock<Settings>>,
 }
@@ -66,9 +114,9 @@ pub struct Shared<T> {
 impl<T> Shared<T> {
     pub fn new(settings: Arc<RwLock<Settings>>) -> Self {
         Shared {
-            session: HashMap::new(),
+            session: SessionManager::new(),
             count: SessionCount::default(),
-            settings
+            settings,
         }
     }
 }
@@ -78,7 +126,7 @@ pub type Info = Option<Map<String, Value>>;
 #[derive(Debug, Clone)]
 pub struct Client<T> {
     pub sender: T,
-    pub info: Info
+    pub info: Info,
 }
 
 impl<T> Deref for Client<T> {
