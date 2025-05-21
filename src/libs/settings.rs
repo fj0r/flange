@@ -131,6 +131,7 @@ impl Config {
         })
     }
 
+    #[allow(dead_code)]
     pub async fn listen(&mut self) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let (tx, rx) = channel::<ResultN<Event>>();
         let mut watcher = recommended_watcher(tx)?;

@@ -1,7 +1,8 @@
 use super::message::ChatMessage;
+use super::settings::Settings;
 use std::{collections::HashMap, ops::Deref};
 use std::sync::Arc;
-use tokio::sync::{mpsc::UnboundedSender, Mutex, MutexGuard};
+use tokio::sync::{mpsc::UnboundedSender, Mutex, RwLock, MutexGuard};
 use serde_json::{Value, Map};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
@@ -42,8 +43,8 @@ impl Deref for Session {
 pub struct SharedState<T> (Arc<Mutex<Shared<T>>>);
 
 impl<T> SharedState<T> {
-    pub fn new() -> Self {
-        SharedState::<T>(Arc::new(Mutex::new(Shared::new())))
+    pub fn new(settings: Arc<RwLock<Settings>>) -> Self {
+        SharedState::<T>(Arc::new(Mutex::new(Shared::new(settings))))
     }
 
     pub async fn read(&self) -> MutexGuard<Shared<T>> {
@@ -59,13 +60,15 @@ impl<T> SharedState<T> {
 pub struct Shared<T> {
     pub session: HashMap<Session, T>,
     pub count: SessionCount,
+    pub settings: Arc<RwLock<Settings>>,
 }
 
 impl<T> Shared<T> {
-    pub fn new() -> Self {
+    pub fn new(settings: Arc<RwLock<Settings>>) -> Self {
         Shared {
             session: HashMap::new(),
             count: SessionCount::default(),
+            settings
         }
     }
 }

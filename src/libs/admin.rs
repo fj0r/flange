@@ -114,3 +114,18 @@ pub fn debug_router() -> Router<StateChat<Sender>> {
         .route("/login", post(login))
         .route("/echo", post(echo))
 }
+
+
+async fn list_config(
+    State(state): State<StateChat<Sender>>,
+    Json(payload): Json<Envelope>,
+) -> Result<(StatusCode, Json<Vec<Session>>), AppError> {
+    let mut succ: Vec<Session> = Vec::new();
+    Ok((StatusCode::OK, succ.into()))
+}
+
+
+pub fn config_router() -> Router<StateChat<Sender>> {
+    Router::new()
+        .route("/list", get(list_config))
+}

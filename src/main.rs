@@ -7,7 +7,7 @@ mod libs;
 use anyhow::{Ok, Result};
 use axum::extract::State;
 use axum::extract::ws::WebSocketUpgrade;
-use libs::admin::{admin_router, debug_router};
+use libs::admin::*;
 use libs::kafka::{KafkaManagerEvent, KafkaManagerPush};
 use libs::settings::{Config, Settings};
 use libs::shared::{StateChat, Sender};
@@ -19,15 +19,16 @@ use tokio::sync::RwLock;
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    #[allow(unused_mut)]
     let mut config = Config::new()?;
-    config.listen().await.unwrap();
+    // config.listen().await.unwrap();
     dbg!(&config.data);
 
     let settings = Arc::new(RwLock::new(Settings::new()?));
 
     //dbg!(&settings);
 
-    let shared = StateChat::<Sender>::new();
+    let shared = StateChat::<Sender>::new(settings.clone());
 
     let queue = settings.read().await.queue.clone();
 
@@ -71,6 +72,7 @@ async fn main() -> Result<()> {
             ),
         )
         .nest("/admin", admin_router())
+        .nest("/config", config_router())
         .nest("/debug", debug_router())
         .with_state(shared);
 
