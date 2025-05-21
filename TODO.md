@@ -10,7 +10,7 @@
     - [x] receive messages via WebSocket and send them to the main queue, or access other services through a **webhook**
     - [x] event map
     - [ ] ~history srv~
-    - [ ] ~hot reload config~ config update api
+    - [x] ~hot reload config~ config update api
 - [ ] ~topic/channel/chatroom~ (client/controller)
 - [x] top event (unachievable)
 - [x] greet

@@ -148,8 +148,30 @@ async fn update_login(
     Ok((StatusCode::OK, Json(true)))
 }
 
+async fn update_greet(
+    State(state): State<StateChat<Sender>>,
+    Json(payload): Json<AssetsList>,
+) -> Result<(StatusCode, Json<bool>), AppError> {
+    let s = state.write().await;
+    let mut s = s.settings.write().await;
+    s.greet = payload;
+    Ok((StatusCode::OK, Json(true)))
+}
+
+async fn update_webhook(
+    State(state): State<StateChat<Sender>>,
+    Json(payload): Json<WebhookMap>,
+) -> Result<(StatusCode, Json<bool>), AppError> {
+    let s = state.write().await;
+    let mut s = s.settings.write().await;
+    s.webhooks = payload;
+    Ok((StatusCode::OK, Json(true)))
+}
+
 pub fn config_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/list", get(list_config))
         .route("/login", post(update_login))
+        .route("/greet", post(update_greet))
+        .route("/webhook", post(update_webhook))
 }
