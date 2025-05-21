@@ -138,6 +138,18 @@ async fn list_config(
     ))
 }
 
+async fn update_login(
+    State(state): State<StateChat<Sender>>,
+    Json(payload): Json<Login>,
+) -> Result<(StatusCode, Json<bool>), AppError> {
+    let s = state.write().await;
+    let mut s = s.settings.write().await;
+    s.login = payload;
+    Ok((StatusCode::OK, Json(true)))
+}
+
 pub fn config_router() -> Router<StateChat<Sender>> {
-    Router::new().route("/list", get(list_config))
+    Router::new()
+        .route("/list", get(list_config))
+        .route("/login", post(update_login))
 }
