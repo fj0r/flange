@@ -1,5 +1,5 @@
 use super::message::Event;
-use super::settings::{Assets, AssetsVariant, Settings};
+use super::settings::{Assets, AssetsVariant, LoginVariant, Settings};
 use super::shared::{Info, Session, StateChat};
 use super::template::Tmpls;
 use super::webhooks::{greet_post, login_post, webhook_post};
@@ -43,7 +43,7 @@ where
         AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
         wh @ AssetsVariant::Webhook { .. } => greet_post(&wh, context).await.ok(),
     };
-    let v = from_str(&content.context("not a webhook")?)?;
+    let v = from_str(&content.context("render failed")?)?;
     let msg: T = (Session::default(), v).into();
     Ok(serde_json::to_string(&msg)?)
 }
@@ -53,9 +53,10 @@ async fn handle_login(
     query: &HashMap<String, String>,
 ) -> Option<(Session, Info)> {
     if settings.login.enable {
-        let endpoint = &settings.login.endpoint.clone()?;
-        let r = login_post(endpoint, query).await.ok()?;
-        return Some((r.0.into(), r.1));
+        if let Some(LoginVariant::Endpoint { endpoint }) = &settings.login.variant {
+            let r = login_post(endpoint, query).await.ok()?;
+            return Some((r.0.into(), r.1));
+        };
     }
     None
 }
@@ -134,14 +135,16 @@ pub async fn handle_ws<T>(
 
     let sid_cloned = sid.clone();
     let webhooks = settings.webhooks.clone();
-    // release lock
-    drop(settings);
+    drop(settings); // release lock
     let mut recv_task = tokio::spawn(async move {
+        #[allow(unused_mut)]
+        let mut sid = sid_cloned;
+
         while let Some(Ok(msg)) = receiver.next().await {
             // text protocol of ws
             let text = msg.to_text()?;
             let value = serde_json::from_str(text)?;
-            let chat_msg: T = (sid_cloned.clone(), value).into();
+            let chat_msg: T = (sid.clone(), value).into();
 
             let mut is_webhook: bool = false;
             if let Some(ev) = chat_msg.event() {
@@ -153,7 +156,7 @@ pub async fn handle_ws<T>(
                                 let _ = tx.send(r);
                             } else {
                                 let context = context! {
-                                    session_id => &sid_cloned,
+                                    session_id => &sid,
                                     event => &ev
                                 };
                                 let t = TMPL

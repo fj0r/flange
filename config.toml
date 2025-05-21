@@ -14,7 +14,8 @@ group = 'ws'
 
 [login]
 enable = true
-endpoint = 'http://localhost:3000/debug/login'
+#endpoint = 'http://localhost:3000/debug/login'
+event = 'login'
 
 [webhooks.history]
 enable = false

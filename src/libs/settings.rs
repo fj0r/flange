@@ -94,10 +94,21 @@ pub struct Webhook {
 pub type WebhookMap = HashMap<String, Webhook>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum LoginVariant {
+    Endpoint {
+        endpoint: String,
+    },
+    Event {
+        event: String,
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Login {
     pub enable: bool,
-    pub endpoint: Option<String>,
-    pub event: Option<String>,
+    #[serde(flatten)]
+    pub variant: Option<LoginVariant>
 }
 
 #[derive(Debug, Deserialize, Clone)]
