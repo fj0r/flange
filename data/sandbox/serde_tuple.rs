@@ -6,7 +6,7 @@
 //! serde_derive = "1.0.219"
 //! serde_json = "1.0.140"
 //! ```
-use serde_json::{to_value, Value, from_str};
+use serde_json::{to_value, Value, from_str, from_value};
 use std::collections::HashMap;
 
 fn main () -> Result<(), Box<dyn std::error::Error>> {
@@ -15,6 +15,10 @@ fn main () -> Result<(), Box<dyn std::error::Error>> {
     dbg!(b);
     let c: (&str, usize) = from_str("[\"a\", 1]")?;
     dbg!(c);
+    let d: Value = from_str("[\"a\", 1]")?;
+    dbg!(&d);
+    let z = from_value::<(String, usize)>(d);
+    dbg!(z);
 
     let mut x = HashMap::new();
     {

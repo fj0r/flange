@@ -9,7 +9,7 @@ use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use minijinja::context;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, from_str};
+use serde_json::{Map, Value, from_str, from_value};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -211,11 +211,41 @@ pub async fn send_to_ws(
 
         while let Some(x) = rx.recv().await {
             if !x.receiver.is_empty() {
-                let s = shared.read().await;
+                let mut s = shared.write().await;
                 for r in x.receiver {
                     if s.session.contains_key(&r) {
-                        let s = s.session.get(&r)?;
-                        let _ = s.send(x.message.clone());
+                        let mut is_login = false;
+                        let e = x.message.event();
+                        let l = s.settings.clone();
+                        let l = l.read().await;
+                        if let Some(LoginVariant::Event { event }) = &l.login.variant {
+                            if let Some(e) = e {
+                                if event == e {
+                                    if let Some((session, info)) = x
+                                        .message
+                                        .content
+                                        .as_object()
+                                        .and_then(|x| x.get("data"))
+                                        .and_then(|x| {
+                                            from_value::<(Session, Option<Map<String, Value>>)>(
+                                                x.to_owned(),
+                                            )
+                                            .ok()
+                                        })
+                                    {
+                                        if let Some(mut c) = s.session.remove(&r) {
+                                            c.info = info;
+                                            s.session.insert(session.clone(), c);
+                                        };
+                                    }
+                                    is_login = true;
+                                };
+                            }
+                        };
+                        if !is_login {
+                            let s = s.session.get(&r)?;
+                            let _ = s.send(x.message.clone());
+                        }
                     }
                 }
             }
