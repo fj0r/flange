@@ -3,13 +3,13 @@ use figment::{
     providers::{Env, Format, Toml},
 };
 use notify::{Event, RecursiveMode, Result as ResultN, Watcher, recommended_watcher};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, mpsc::channel};
 use tokio::sync::Mutex;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum AssetsVariant {
     Path {
@@ -40,7 +40,7 @@ impl From<AssetsVariant> for Webhook {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Assets {
     #[serde(default)]
@@ -82,7 +82,7 @@ fn default_accept() -> String {
     "application/json".to_owned()
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[allow(unused)]
 pub struct Webhook {
     pub enable: bool,
@@ -93,15 +93,14 @@ pub struct Webhook {
 
 pub type WebhookMap = HashMap<String, Webhook>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Login {
     pub enable: bool,
     pub endpoint: Option<String>,
     pub event: Option<String>,
 }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[allow(unused)]
 pub(crate) struct Settings {
     pub queue: Queue,

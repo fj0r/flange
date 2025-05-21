@@ -1,3 +1,9 @@
+use super::error::AppError;
+use super::{
+    message::Envelope,
+    settings::{AssetsList, Login, WebhookMap},
+    shared::{Info, Sender, Session, StateChat},
+};
 use axum::{
     Router,
     extract::{Json, Path, Request, State},
@@ -5,13 +11,8 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-use serde::Serialize;
-use super::error::AppError;
-use super::{
-    message::Envelope,
-    shared::{Info, Sender, Session, StateChat},
-};
 use minijinja::Environment;
+use serde::Serialize;
 use serde_json::{Map, Value, from_str};
 
 async fn send(
@@ -38,19 +39,19 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-
 #[derive(Debug, Serialize)]
 pub struct UserLine {
     id: Session,
-    info: Info
+    info: Info,
 }
 
 async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<UserLine>> {
     let s = state.read().await;
     let mut r = Vec::new();
     for (k, v) in &s.session {
-        r .push(UserLine {
-            id: k.clone(), info: v.info.clone()
+        r.push(UserLine {
+            id: k.clone(),
+            info: v.info.clone(),
         });
     }
     Json(r)
@@ -115,17 +116,28 @@ pub fn debug_router() -> Router<StateChat<Sender>> {
         .route("/echo", post(echo))
 }
 
+#[derive(Serialize)]
+struct ConfigList {
+    login: Login,
+    greet: AssetsList,
+    webhook: WebhookMap,
+}
 
 async fn list_config(
     State(state): State<StateChat<Sender>>,
-    Json(payload): Json<Envelope>,
-) -> Result<(StatusCode, Json<Vec<Session>>), AppError> {
-    let mut succ: Vec<Session> = Vec::new();
-    Ok((StatusCode::OK, succ.into()))
+) -> Result<(StatusCode, Json<ConfigList>), AppError> {
+    let s = state.read().await;
+    let s = s.settings.read().await.clone();
+    Ok((
+        StatusCode::OK,
+        Json(ConfigList {
+            login: s.login,
+            greet: s.greet,
+            webhook: s.webhooks,
+        }),
+    ))
 }
 
-
 pub fn config_router() -> Router<StateChat<Sender>> {
-    Router::new()
-        .route("/list", get(list_config))
+    Router::new().route("/list", get(list_config))
 }
