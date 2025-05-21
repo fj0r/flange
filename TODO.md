@@ -19,4 +19,5 @@
     - [x] webhook
 - [x] auth/login
     - [x] webhook
-    - [ ] event (replace session)
+    - [x] event (replace session)
+        - [ ] update session_id after the message queue login event

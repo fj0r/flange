@@ -137,6 +137,7 @@ pub async fn handle_ws<T>(
     let webhooks = settings.webhooks.clone();
     drop(settings); // release lock
     let mut recv_task = tokio::spawn(async move {
+        // TODO: update sid after the message queue login event
         #[allow(unused_mut)]
         let mut sid = sid_cloned;
 
