@@ -137,7 +137,11 @@ pub async fn handle_ws<T>(
     let webhooks = settings.webhooks.clone();
     drop(settings); // release lock
     let mut recv_task = tokio::spawn(async move {
-        // TODO: update sid after the message queue login event
+        // update sid after the message queue login event
+        // UnboundedSender does not implement `Eq` and `Hash`
+        // Therefore, it cannot be used to look up sid in reverse.
+        // If another reverse lookup `r_key` is added, then `r_key` is immutable, while sid is mutable
+        // It would be better if sid were immutable, and the name was placed in `info`
         #[allow(unused_mut)]
         let mut sid = sid_cloned;
 
@@ -222,22 +226,19 @@ pub async fn send_to_ws(
                         if let Some(LoginVariant::Event { event }) = &l.login.variant {
                             if let Some(e) = e {
                                 if event == e {
-                                    if let Some((session, info)) = x
+                                    if let Some(info) = x
                                         .message
                                         .content
                                         .as_object()
                                         .and_then(|x| x.get("data"))
                                         .and_then(|x| {
-                                            from_value::<(Session, Option<Map<String, Value>>)>(
+                                            from_value::<Option<Map<String, Value>>>(
                                                 x.to_owned(),
                                             )
                                             .ok()
                                         })
                                     {
-                                        if let Some(mut c) = s.session.remove(&r) {
-                                            c.info = info;
-                                            s.session.insert(session.clone(), c);
-                                        };
+                                        s.session.entry(r.clone()).and_modify(|x| x.info = info);
                                     }
                                     is_login = true;
                                 };

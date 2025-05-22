@@ -3,6 +3,6 @@ sender: ""
 content:
     event: login
     data:
-    - login-from-mq
-    - from: kafka
+      name: login-from-mq
+      from: kafka
 

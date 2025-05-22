@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 use std::{
-    collections::{HashMap, hash_map::Iter},
+    collections::{HashMap, hash_map::{Iter, Entry}},
     ops::Deref,
 };
 use tokio::sync::{Mutex, MutexGuard, RwLock, mpsc::UnboundedSender};
@@ -75,6 +75,10 @@ impl<T> SessionManager<T> {
 
     pub fn contains_key(&self, k: &Session) -> bool {
         self.map.contains_key(k)
+    }
+
+    pub fn entry(&mut self, k: Session) -> Entry<'_, Session, T> {
+        self.map.entry(k)
     }
 }
 
