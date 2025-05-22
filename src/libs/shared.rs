@@ -3,7 +3,6 @@ use super::settings::Settings;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fmt::{Debug, Display};
-use std::ops::DerefMut;
 use std::sync::Arc;
 use std::{
     collections::{HashMap, hash_map::Iter},
@@ -47,20 +46,6 @@ pub struct SessionManager<T> {
     map: HashMap<Session, T>,
 }
 
-impl<T> Deref for SessionManager<T> {
-    type Target = HashMap<Session, T>;
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-
-impl<T> DerefMut for SessionManager<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
-    }
-}
-
-
 impl<'a, T> IntoIterator for &'a SessionManager<T> {
     type Item = (&'a Session, &'a T);
     type IntoIter = Iter<'a, Session, T>;
@@ -76,14 +61,20 @@ impl<T> SessionManager<T> {
         }
     }
 
-    // TODO:
-    fn insert(&mut self, k: Session, v: T) -> Option<T> {
+    pub fn get(&self, k: &Session) -> Option<&T> {
+        self.map.get(k)
+    }
+
+    pub fn insert(&mut self, k: Session, v: T) -> Option<T> {
         self.map.insert(k, v)
     }
 
-    // TODO:
-    fn remove(&mut self, k: &Session) -> Option<T> {
+    pub fn remove(&mut self, k: &Session) -> Option<T> {
         self.map.remove(k)
+    }
+
+    pub fn contains_key(&self, k: &Session) -> bool {
+        self.map.contains_key(k)
     }
 }
 

@@ -22,7 +22,7 @@ async fn send(
     let mut succ: Vec<Session> = Vec::new();
     let s = state.read().await;
     if payload.receiver.is_empty() {
-        for (n, c) in s.session.iter() {
+        for (n, c) in &s.session {
             let _ = c.send(payload.message.clone());
             succ.push(n.to_owned());
         }
