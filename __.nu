@@ -185,3 +185,16 @@ export def 'dev rpk' [--product --consume] {
         rpk consume $s.queue.event.topic
     }
 }
+
+export def 'docker run' [] {
+    ^$env.CNTRCTL run ...[
+        --name flange
+        --rm -it
+        -p 6666:3000
+        -e $"APP_QUEUE_EVENT_BROKER=[192.168.99.234:19092]"
+        -e $"APP_QUEUE_PUSH_BROKER=[192.168.99.234:19092]"
+        -w /app
+        ghcr.io/fj0r/flange:lastest
+        /app/flange
+    ]
+}

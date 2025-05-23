@@ -124,7 +124,7 @@ impl Settings {
     pub(crate) fn new() -> Result<Self> {
         Figment::new()
             .merge(Toml::file("config.toml"))
-            .merge(Env::prefixed("app_").split("_"))
+            .merge(Env::prefixed("APP_").split("_"))
             .extract()
     }
 }
