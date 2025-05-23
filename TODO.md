@@ -12,7 +12,7 @@
     - [ ] ~history srv~
     - [x] ~hot reload config~ config update api
 - [ ] ~topic/channel/chatroom~ (client/controller)
-- [x] top event (unachievable)
+- [x] ~top event~ (unachievable)
 - [x] greet
     - [x] init ui
     - [x] template
@@ -20,4 +20,4 @@
 - [x] auth/login
     - [x] webhook
     - [x] event (replace session)
-        - [ ] update session_id after the message queue login event
+        - [x] ~update session_id after the message queue login event~
