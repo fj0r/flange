@@ -108,6 +108,7 @@ export def 'rpk topic delete' [name:string@'rpk topic list'] {
 export def 'rpk up' [
     --dry-run
 ] {
+    let external = $env.external? | default 'localhost'
     let image = 'redpandadata/redpanda:latest'
     mut args = [run -d --name redpanda]
     let ports = {
@@ -131,11 +132,11 @@ export def 'rpk up' [
         --kafka-addr
         'internal://0.0.0.0:9092,external://0.0.0.0:19092'
         --advertise-kafka-addr
-        'internal://127.0.0.1:9092,external://localhost:19092'
+        $'internal://127.0.0.1:9092,external://($external):19092'
         --pandaproxy-addr
         'internal://0.0.0.0:8082,external://0.0.0.0:18082'
         --advertise-pandaproxy-addr
-        'internal://127.0.0.1:8082,external://localhost:18082'
+        $'internal://127.0.0.1:8082,external://($external):18082'
         --schema-registry-addr
         'internal://0.0.0.0:8081,external://0.0.0.0:18081'
         --rpc-addr
@@ -187,12 +188,13 @@ export def 'dev rpk' [--product --consume] {
 }
 
 export def 'docker run' [] {
+    let external = $env.external? | default 'localhost'
     ^$env.CNTRCTL run ...[
         --name flange
         --rm -it
-        -p 6666:3000
-        -e $"APP_QUEUE_EVENT_BROKER=[192.168.99.234:19092]"
-        -e $"APP_QUEUE_PUSH_BROKER=[192.168.99.234:19092]"
+        -p 5000:3000
+        -e $"APP_QUEUE_EVENT_BROKER=[($external):19092]"
+        -e $"APP_QUEUE_PUSH_BROKER=[($external):19092]"
         -w /app
         ghcr.io/fj0r/flange:lastest
         /app/flange
