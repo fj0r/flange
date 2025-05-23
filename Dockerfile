@@ -9,3 +9,4 @@ RUN apt update \
 COPY --from=build /app/target/release/flange /app/flange
 COPY --from=assets /app /app/static
 COPY config.toml /app
+COPY assets /app/assets
