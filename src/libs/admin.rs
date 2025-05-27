@@ -109,11 +109,16 @@ async fn login(
     Ok(Json((uuid.as_str().into(), Some(payload))))
 }
 
+async fn health() -> Result<String, AppError> {
+    Ok("ok".into())
+}
+
 pub fn debug_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/render/{name}", post(render))
         .route("/login", post(login))
         .route("/echo", post(echo))
+        .route("/health", get(health))
 }
 
 #[derive(Serialize)]
