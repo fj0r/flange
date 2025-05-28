@@ -30,6 +30,11 @@ export def send [
     http post --content-type application/json $host $data
 }
 
+export def 'dev build' [] {
+    $env.RUSTFLAGS = "--cfg tokio_unstable"
+    cargo build --release
+}
+
 export def 'dev serve' [] {
     $env.RUST_BACKTRACE = 1
     #$env.APP_KAFKA_ENABLE = 1

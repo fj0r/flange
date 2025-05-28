@@ -19,6 +19,7 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // console_subscriber::init();
     tracing_subscriber::fmt::init();
 
     #[allow(unused_mut)]
