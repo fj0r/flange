@@ -40,8 +40,8 @@ where
         return Ok("disabled".into());
     }
     let content = match &asset.variant {
-        AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(&context).ok(),
-        wh @ AssetsVariant::Webhook { .. } => greet_post(&wh, context).await.ok(),
+        AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(context).ok(),
+        wh @ AssetsVariant::Webhook { .. } => greet_post(wh, context).await.ok(),
     };
     let v = from_str(&content.context("render failed")?)?;
     let msg: T = (Session::default(), v).into();
@@ -55,7 +55,7 @@ async fn handle_login(
     if settings.login.enable {
         if let Some(LoginVariant::Endpoint { endpoint }) = &settings.login.variant {
             let r = login_post(endpoint, query).await.ok()?;
-            return Some((r.0.into(), r.1));
+            return Some((r.0, r.1));
         };
     }
     None

@@ -7,7 +7,6 @@ use libs::message::{Envelope, MessageQueueEvent, MessageQueuePush};
 use std::collections::HashMap;
 use tower_http::services::ServeDir;
 use tracing::info;
-use tracing_subscriber;
 mod libs;
 use anyhow::{Ok, Result};
 use libs::admin::*;
