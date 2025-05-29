@@ -38,7 +38,7 @@
           {
             "type": "case",
             "attrs": {
-              "class": "nogrow s as box border shadow"
+              "class": "nogrow s ax box border shadow"
             }
           }
         ]
