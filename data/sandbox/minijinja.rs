@@ -28,6 +28,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env.add_template("b", b).unwrap();
     println!("{}", env.get_template("b").unwrap().render(context!{ rank => 6 }).unwrap());
 
+    let c = r#"{"action":"join","data":{"children":[{% for i in range(rank - 1) -%} {{ "{}," -}} {% endfor %}{{payload}}],"id":{{id}},"type":"case"},"event":"chat"}"#;
+    env.add_template("c", c).unwrap();
+    let c = context!{rank => 8, payload => r#"{"a":123}"#};
+    println!("{}", env.get_template("c").unwrap().render(c).unwrap());
 
     Ok(())
 }
