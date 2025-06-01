@@ -1,5 +1,5 @@
 {
-    "action": "merge",
+    "action": "set",
     "event": "login",
     "data": {
         "type": "text",
