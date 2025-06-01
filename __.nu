@@ -41,6 +41,12 @@ export def 'dev serve' [] {
     cargo run
 }
 
+export def 'dev profile' [] {
+    cargo profiler callgrind --bin target/release/flange
+    kcachegrind callgrind.out
+    rm callgrind.out
+}
+
 export def 'dev client' [] {
     let c = open $CFG
     websocat $"ws://($c.server.host)/channel"
