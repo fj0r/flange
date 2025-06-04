@@ -3,7 +3,6 @@ use super::shared::{Info, Session};
 use minijinja::Value;
 use reqwest::Error;
 use serde::{Serialize, de::DeserializeOwned};
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 pub async fn webhook_post<T>(wh: &Webhook, msg: T) -> Result<T, Error>
@@ -37,9 +36,9 @@ pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, Greet
     }
 }
 
-pub async fn login_post(
+pub async fn login_post<T: Serialize>(
     url: impl AsRef<str>,
-    query: &HashMap<String, String>,
+    query: &T,
 ) -> Result<(Session, Info), GreetError> {
     let client = reqwest::Client::new();
     let r = client.post(url.as_ref()).json(query).send().await?;

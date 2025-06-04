@@ -17,6 +17,11 @@ enable = true
 endpoint = 'http://localhost:3000/debug/login'
 #event = 'login'
 
+[logout]
+enable = true
+endpoint = 'http://localhost:3000/debug/logout'
+#event = 'login'
+
 [webhooks.history]
 enable = false
 endpoint = 'http://localhost:8000/v1/history'

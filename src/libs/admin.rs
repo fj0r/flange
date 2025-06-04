@@ -109,6 +109,13 @@ async fn login(
     Ok(Json((uuid.as_str().into(), Some(payload))))
 }
 
+async fn logout(
+    State(_state): State<StateChat<Sender>>,
+    Json(payload): Json<Map<String, Value>>,
+) -> Result<Json<(Session, Info)>, AppError> {
+    Ok(Json(("".into(), Some(payload))))
+}
+
 async fn health() -> Result<String, AppError> {
     Ok("ok".into())
 }
@@ -117,6 +124,7 @@ pub fn debug_router() -> Router<StateChat<Sender>> {
     Router::new()
         .route("/render/{name}", post(render))
         .route("/login", post(login))
+        .route("/logout", post(logout))
         .route("/echo", post(echo))
         .route("/health", get(health))
 }

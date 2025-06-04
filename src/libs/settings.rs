@@ -118,6 +118,7 @@ pub(crate) struct Settings {
     pub webhooks: WebhookMap,
     pub greet: AssetsList,
     pub login: Login,
+    pub logout: Login,
 }
 
 impl Settings {

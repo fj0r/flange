@@ -1,5 +1,5 @@
 use super::message::Event;
-use super::settings::{Assets, AssetsVariant, LoginVariant, Settings};
+use super::settings::{Assets, AssetsVariant, Login, LoginVariant, Settings};
 use super::shared::{Info, Session, StateChat};
 use super::template::Tmpls;
 use super::webhooks::{greet_post, login_post, webhook_post};
@@ -49,11 +49,11 @@ where
 }
 
 async fn handle_login(
-    settings: &Settings,
+    login: &Login,
     query: &HashMap<String, String>,
 ) -> Option<(Session, Info)> {
-    if settings.login.enable {
-        if let Some(LoginVariant::Endpoint { endpoint }) = &settings.login.variant {
+    if login.enable {
+        if let Some(LoginVariant::Endpoint { endpoint }) = &login.variant {
             let r = login_post(endpoint, query).await.ok()?;
             return Some((r.0, r.1));
         };
@@ -77,13 +77,13 @@ pub async fn handle_ws<T>(
         + Send
         + 'static,
 {
-    let settings = settings.read().await;
+    let setting1 = settings.read().await;
     let (mut sender, mut receiver) = socket.split();
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
     let sid: Session;
 
-    if let Some((s, info)) = handle_login(&settings, &query).await {
+    if let Some((s, info)) = handle_login(&setting1.login, &query).await {
         sid = s;
         let mut s = state.write().await;
         s.session.insert(
@@ -110,7 +110,7 @@ pub async fn handle_ws<T>(
 
     let context = context! { session_id => &sid };
 
-    for g in settings.greet.iter() {
+    for g in setting1.greet.iter() {
         if let Ok(text) = handle_greet::<T>(g, &context).await {
             let _ = sender
                 .send(axum::extract::ws::Message::Text(text.into()))
@@ -134,8 +134,8 @@ pub async fn handle_ws<T>(
     });
 
     let sid_cloned = sid.clone();
-    let webhooks = settings.webhooks.clone();
-    drop(settings); // release lock
+    let webhooks = setting1.webhooks.clone();
+    drop(setting1); // release lock
     let mut recv_task = tokio::spawn(async move {
         // update sid after the message queue login event
         // UnboundedSender does not implement `Eq` and `Hash`
@@ -196,6 +196,9 @@ pub async fn handle_ws<T>(
     tracing::info!("Connection closed for {}", &sid);
     let mut s = state.write().await;
     s.session.remove(&sid);
+    let setting2 = settings.read().await;
+    let _ = handle_login(&setting2.logout, &query).await;
+
 }
 
 #[allow(unused)]
