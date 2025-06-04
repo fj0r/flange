@@ -9,7 +9,6 @@ use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, from_str, from_value};
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::LazyLock;
@@ -53,7 +52,7 @@ where
     Ok(serde_json::to_string(&msg)?)
 }
 
-async fn handle_login(login: &Login, query: &HashMap<String, String>) -> Option<(Session, Info)> {
+async fn handle_login(login: &Login, query: &Map<String, Value>) -> Option<(Session, Info)> {
     if login.enable {
         if let Some(LoginVariant::Endpoint { endpoint }) = &login.variant {
             let r = login_post(endpoint, query).await.ok()?;
@@ -68,7 +67,7 @@ pub async fn handle_ws<T>(
     event_tx: Option<UnboundedSender<T>>,
     state: StateChat<UnboundedSender<T>>,
     settings: Arc<RwLock<Settings>>,
-    query: HashMap<String, String>,
+    query: Map<String, Value>,
 ) where
     T: Event
         + for<'a> Deserialize<'a>

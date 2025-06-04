@@ -4,7 +4,7 @@ use axum::{
     routing::get,
 };
 use libs::message::{Envelope, MessageQueueEvent, MessageQueuePush};
-use std::collections::HashMap;
+use serde_json::{Map, Value};
 use tower_http::services::ServeDir;
 use tracing::info;
 mod libs;
@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
             "/channel",
             get(
                 |ws: WebSocketUpgrade,
-                 Query(q): Query<HashMap<String, String>>,
+                 Query(q): Query<Map<String, Value>>,
                  State(state): State<StateChat<Sender>>| async move {
                     ws.on_upgrade(|socket| handle_ws(socket, event_tx, state, settings, q))
                 },
