@@ -39,22 +39,22 @@ async fn send(
     Ok((StatusCode::OK, succ.into()))
 }
 
-#[derive(Debug, Serialize)]
-pub struct UserLine {
-    id: Session,
-    info: Info,
-}
-
-async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<UserLine>> {
+async fn list(State(state): State<StateChat<Sender>>) -> axum::Json<Vec<Session>> {
     let s = state.read().await;
     let mut r = Vec::new();
-    for (k, v) in &s.session {
-        r.push(UserLine {
-            id: k.clone(),
-            info: v.info.clone(),
-        });
+    for (k, _v) in &s.session {
+        r.push(k.clone());
     }
     Json(r)
+}
+
+async fn info(
+    Path(user): Path<String>,
+    State(state): State<StateChat<Sender>>,
+) -> axum::Json<Map<String, Value>> {
+    let s = state.read().await;
+    let u = s.session.get(&user.as_str().into()).and_then(|x| x.info.clone());
+    Json(u.unwrap_or_else(|| Map::new()))
 }
 
 struct Req<'a>(&'a Request);
@@ -70,7 +70,8 @@ impl std::fmt::Display for Req<'_> {
 
 pub fn admin_router() -> Router<StateChat<Sender>> {
     Router::new()
-        .route("/users", get(list))
+        .route("/sessions", get(list))
+        .route("/info/{user}", get(info))
         .route("/send", post(send))
 }
 

@@ -53,10 +53,7 @@ where
     Ok(serde_json::to_string(&msg)?)
 }
 
-async fn handle_login(
-    login: &Login,
-    query: &HashMap<String, String>,
-) -> Option<(Session, Info)> {
+async fn handle_login(login: &Login, query: &HashMap<String, String>) -> Option<(Session, Info)> {
     if login.enable {
         if let Some(LoginVariant::Endpoint { endpoint }) = &login.variant {
             let r = login_post(endpoint, query).await.ok()?;
@@ -116,12 +113,12 @@ pub async fn handle_ws<T>(
 
     tracing::info!("Connection opened for {}", &sid);
 
-    let mut context = if let Some(inf) = inf {
-        inf
-    } else {
-        Map::new()
-    };
+    let mut context = Map::new();
     context.insert("session_id".into(), sid.clone().into());
+    context.insert(
+        "info".into(),
+        Value::Object(inf.unwrap_or_else(|| Map::new())),
+    );
 
     for g in setting1.greet.iter() {
         if let Ok(text) = handle_greet::<T>(g, &context).await {
@@ -208,7 +205,6 @@ pub async fn handle_ws<T>(
     s.session.remove(&sid);
     let setting2 = settings.read().await;
     let _ = handle_login(&setting2.logout, &query).await;
-
 }
 
 #[allow(unused)]
@@ -245,10 +241,8 @@ pub async fn send_to_ws(
                                         .as_object()
                                         .and_then(|x| x.get("data"))
                                         .and_then(|x| {
-                                            from_value::<Option<Map<String, Value>>>(
-                                                x.to_owned(),
-                                            )
-                                            .ok()
+                                            from_value::<Option<Map<String, Value>>>(x.to_owned())
+                                                .ok()
                                         })
                                     {
                                         s.session.entry(r.clone()).and_modify(|x| x.info = info);
