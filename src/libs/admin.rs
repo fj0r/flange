@@ -116,8 +116,11 @@ async fn logout(
     Ok(Json(("".into(), Some(payload))))
 }
 
-async fn health() -> Result<String, AppError> {
-    Ok("ok".into())
+async fn health(State(state): State<StateChat<Sender>>) -> Result<Json<Value>, AppError> {
+    let mut b = Map::new();
+    let count = state.read().await.count as u64;
+    b.insert("count".to_string(), count.into());
+    Ok(axum::Json(Value::Object(b)))
 }
 
 pub fn debug_router() -> Router<StateChat<Sender>> {
