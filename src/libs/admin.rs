@@ -53,7 +53,10 @@ async fn info(
     State(state): State<StateChat<Sender>>,
 ) -> axum::Json<Map<String, Value>> {
     let s = state.read().await;
-    let u = s.session.get(&user.as_str().into()).and_then(|x| x.info.clone());
+    let u = s
+        .session
+        .get(&user.as_str().into())
+        .and_then(|x| x.info.clone());
     Json(u.unwrap_or_else(|| Map::new()))
 }
 
@@ -118,6 +121,21 @@ async fn logout(
     Ok(Json(("".into(), Some(payload))))
 }
 
+async fn inc(
+    State(state): State<StateChat<Sender>>,
+    Json(payload): Json<Map<String, Value>>,
+) -> Result<String, AppError> {
+    let mut s = state.write().await;
+    s.count += 1;
+    let count = s.count;
+    drop(s);
+    if let Some(interval) = payload.get("interval").and_then(|x| x.as_u64()) {
+        use tokio::time::{sleep, Duration};
+        let _ = sleep(Duration::from_secs(interval)).await;
+    };
+    Ok(count.to_string())
+}
+
 async fn health(State(state): State<StateChat<Sender>>) -> Result<Json<Value>, AppError> {
     let mut b = Map::new();
     let count = state.read().await.count as u64;
@@ -131,6 +149,7 @@ pub fn debug_router() -> Router<StateChat<Sender>> {
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/echo", post(echo))
+        .route("/inc", post(inc))
         .route("/health", get(health))
 }
 

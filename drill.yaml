@@ -14,6 +14,14 @@ plan:
   #    method: POST
   #    body: hello
 
-  - name: Hello
+  #- name: Hello
+  #  request:
+  #    url: /debug/health
+
+  - name: Inc
     request:
-      url: /debug/health
+      headers:
+        Content-Type: 'application/json'
+      url: /debug/inc
+      method: POST
+      body: '{}'
