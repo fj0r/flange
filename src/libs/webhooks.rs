@@ -1,9 +1,9 @@
 use super::settings::{AssetsVariant, Webhook};
 use super::shared::{Info, Session};
-use minijinja::Value;
 use reqwest::Error;
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt::Debug;
+use serde_json::{Value, Map};
 
 pub async fn webhook_post<T>(wh: &Webhook, msg: T) -> Result<T, Error>
 where
@@ -22,7 +22,7 @@ pub enum GreetError {
     NotWebhook,
 }
 
-pub async fn greet_post(wh: &AssetsVariant, msg: &Value) -> Result<String, GreetError> {
+pub async fn greet_post(wh: &AssetsVariant, msg: &Map<String, Value>) -> Result<String, GreetError> {
     let client = reqwest::Client::new();
     match wh {
         AssetsVariant::Webhook {

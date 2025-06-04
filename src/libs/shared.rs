@@ -22,6 +22,12 @@ impl From<&str> for Session {
     }
 }
 
+impl From<Session> for Value {
+    fn from(value: Session) -> Self {
+        value.0.into()
+    }
+}
+
 impl From<SessionCount> for Session {
     fn from(value: SessionCount) -> Self {
         Self(value.to_string())

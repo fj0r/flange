@@ -7,7 +7,6 @@ use anyhow::Result;
 use anyhow::{Context, Ok as Okk};
 use axum::extract::ws::WebSocket;
 use futures::{sink::SinkExt, stream::StreamExt};
-use minijinja::context;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, from_str, from_value};
 use std::collections::HashMap;
@@ -32,7 +31,7 @@ impl<'a> AsyncIterator for GreetIter<'a> {
 
 static TMPL: LazyLock<Tmpls> = LazyLock::new(|| Tmpls::new("assets").unwrap());
 
-async fn handle_greet<T>(asset: &Assets, context: &minijinja::Value) -> Result<String>
+async fn handle_greet<T>(asset: &Assets, context: &Map<String, Value>) -> Result<String>
 where
     T: Event + Serialize + From<(Session, Value)>,
 {
@@ -40,8 +39,14 @@ where
         return Ok("disabled".into());
     }
     let content = match &asset.variant {
-        AssetsVariant::Path { path } => TMPL.get_template(path).unwrap().render(context).ok(),
-        wh @ AssetsVariant::Webhook { .. } => greet_post(wh, context).await.ok(),
+        AssetsVariant::Path { path } => {
+            let tmpl = TMPL.get_template(path).unwrap();
+            tmpl.render(context).ok()
+        }
+        wh @ AssetsVariant::Webhook { .. } => {
+            let r = greet_post(wh, context).await.ok();
+            r
+        }
     };
     let v = from_str(&content.context("render failed")?)?;
     let msg: T = (Session::default(), v).into();
@@ -82,9 +87,11 @@ pub async fn handle_ws<T>(
 
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<T>();
     let sid: Session;
+    let inf: Option<Map<String, Value>>;
 
     if let Some((s, info)) = handle_login(&setting1.login, &query).await {
         sid = s;
+        inf = info.clone();
         let mut s = state.write().await;
         s.session.insert(
             sid.clone(),
@@ -97,6 +104,7 @@ pub async fn handle_ws<T>(
         let mut s = state.write().await;
         s.count += 1;
         sid = s.count.into();
+        inf = None;
         s.session.insert(
             sid.clone(),
             super::shared::Client {
@@ -108,7 +116,12 @@ pub async fn handle_ws<T>(
 
     tracing::info!("Connection opened for {}", &sid);
 
-    let context = context! { session_id => &sid };
+    let mut context = if let Some(inf) = inf {
+        inf
+    } else {
+        Map::new()
+    };
+    context.insert("session_id".into(), sid.clone().into());
 
     for g in setting1.greet.iter() {
         if let Ok(text) = handle_greet::<T>(g, &context).await {
@@ -160,10 +173,7 @@ pub async fn handle_ws<T>(
                             if let Ok(r) = webhook_post(wh, chat_msg.clone()).await {
                                 let _ = tx.send(r);
                             } else {
-                                let context = context! {
-                                    session_id => &sid,
-                                    event => &ev
-                                };
+                                context.insert("event".into(), ev.into());
                                 let t = TMPL
                                     .get_template("webhook_error.json")
                                     .unwrap()

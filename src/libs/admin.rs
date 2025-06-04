@@ -102,10 +102,11 @@ async fn echo(req: Request) -> Result<Response, AppError> {
 
 async fn login(
     State(_state): State<StateChat<Sender>>,
-    Json(payload): Json<Map<String, Value>>,
+    Json(mut payload): Json<Map<String, Value>>,
 ) -> Result<Json<(Session, Info)>, AppError> {
     use short_uuid::ShortUuid;
     let uuid = ShortUuid::generate().to_string();
+    payload.insert("username".into(), uuid[..6].into());
     Ok(Json((uuid.as_str().into(), Some(payload))))
 }
 
