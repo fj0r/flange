@@ -35,7 +35,10 @@ export def 'dev build' [] {
     cargo build --release
 }
 
-export def 'dev serve' [] {
+export def 'serve' [--rpk] {
+    if $rpk {
+        dev rpk
+    }
     $env.RUST_BACKTRACE = 1
     #$env.APP_KAFKA_ENABLE = 1
     cargo run
